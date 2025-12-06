@@ -14,6 +14,11 @@ typedef enum {
     T_TRUE,
     T_FALSE,
 
+    // Logical Operators
+    T_AND,      // && or 'and'
+    T_OR,       // || or 'or'
+    T_NOT,      // !  or 'not'
+
     // Operators
     T_PLUS,
     T_INC,      // ++ 

@@ -247,6 +247,25 @@ Token lexer_next(Lexer *L) {
         return t;
     }
 
+    // Handle &&
+    if (c == '&' && lx_peek(L, 1) == '&') {
+        lx_advance(L);
+        lx_advance(L);
+        Token t = make_token(T_AND, "&&", 2);
+        t.line = token_line;
+        t.col = token_col;
+        return t;
+    }
+
+    // Handle ||
+    if (c == '|' && lx_peek(L, 1) == '|') {
+        lx_advance(L);
+        lx_advance(L);
+        Token t = make_token(T_OR, "||", 2);
+        t.line = token_line;
+        t.col = token_col;
+        return t;
+    }
     // Handle Single-character Operators
     TokenType single_op = T_INVALID;
     char single_char[2] = {(char)c, '\0'};
@@ -267,8 +286,8 @@ Token lexer_next(Lexer *L) {
     else if (c == ']') single_op = T_RBRACKET;
     else if (c == ',') single_op = T_COMMA;
     else if (c == ':') single_op = T_COLON;
-    else if (c == ';') single_op = T_SEMICOLON; 
-
+    else if (c == ';') single_op = T_SEMICOLON;
+    else if (c == '!') single_op = T_NOT; 
     if (single_op != T_INVALID) {
         lx_advance(L);
         Token t = make_token(single_op, single_char, 1);
@@ -337,7 +356,10 @@ Token lexer_next(Lexer *L) {
         else if (!strcmp(buf, "switch")) tt = T_SWITCH;
         else if (!strcmp(buf, "case")) tt = T_CASE;
         else if (!strcmp(buf, "default")) tt = T_DEFAULT;
-        
+
+        else if (!strcmp(buf, "and")) tt = T_AND;
+        else if (!strcmp(buf, "or"))  tt = T_OR;
+        else if (!strcmp(buf, "not")) tt = T_NOT;
         // THE BALLS EXTENSION 
         else if (!strcmp(buf, "balls")) tt = T_LET;
         else if (!strcmp(buf, "big_balls")) tt = T_LET;

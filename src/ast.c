@@ -238,6 +238,13 @@ AstNode *ast_assign_index(AstNode *list, AstNode *index, AstNode *value) {
     }
     return n;
 }
+
+AstNode *ast_not(AstNode *expr) {
+    AstNode *n = mk(NODE_NOT);
+    n->logic_not.expr = expr;
+    return n;
+}
+
 //AST Node Destructor
 
 void ast_free(AstNode *n) {
@@ -330,7 +337,10 @@ void ast_free(AstNode *n) {
             ast_free(n->assign_index.list);
             ast_free(n->assign_index.index);
             ast_free(n->assign_index.value);
-        break;
+            break;
+        case NODE_NOT:
+            ast_free(n->logic_not.expr);
+            break;
         default:
             break;
     }

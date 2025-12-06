@@ -232,6 +232,11 @@ static AstNode *call_or_index(Parser *p) {
 }
 
 static AstNode *unary(Parser *p) {
+    if (match(p, T_NOT)) {
+        AstNode *operand = unary(p);
+        return ast_not(operand);
+    }
+
     if (match(p, T_MINUS)) {
         // Handle negative numbers: -x is equivalent to 0 - x
         AstNode *right = unary(p);
@@ -297,10 +302,34 @@ static AstNode *equality(Parser *p) {
     }
     return expr;
 }
+static AstNode *logical_and(Parser *p) {
+    AstNode *expr = equality(p);
+
+    while (match(p, T_AND)) {
+        AstNode *right = equality(p);
+        if (expr && right) {
+            expr = ast_binop(OP_AND, expr, right);
+        }
+    }
+    return expr;
+}
+
+static AstNode *logical_or(Parser *p) {
+    AstNode *expr = logical_and(p);
+
+    while (match(p, T_OR)) {
+        AstNode *right = logical_and(p);
+        if (expr && right) {
+            expr = ast_binop(OP_OR, expr, right);
+        }
+    }
+    return expr;
+}
 
 static AstNode *expression(Parser *p) {
     if (p->had_error) return NULL;
-    return equality(p);
+    // Changed (was equality)
+    return logical_or(p);
 }
 
 static AstNode *statement(Parser *p) {

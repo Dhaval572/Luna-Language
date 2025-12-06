@@ -29,6 +29,12 @@ const char *token_name(TokenType t) {
             return "TRUE";
         case T_FALSE:
             return "FALSE";
+        case T_AND:
+            return "AND";
+        case T_OR:
+            return "OR";
+        case T_NOT:
+            return "NOT";
         case T_IDENT:
             return "IDENT";
         case T_NUMBER:

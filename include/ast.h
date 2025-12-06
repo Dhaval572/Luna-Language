@@ -24,7 +24,7 @@ typedef enum {
     NODE_INPUT,
     NODE_INC,       // ++
     NODE_DEC,       // -- 
-
+    NODE_NOT,       // ! (Unary NOT)
     NODE_IF,
     NODE_WHILE,
     NODE_FOR,       
@@ -52,7 +52,9 @@ typedef enum {
     OP_LT, 
     OP_GT, 
     OP_LTE, 
-    OP_GTE
+    OP_GTE,
+    OP_AND,
+    OP_OR,
 } BinOpKind;
 
 typedef struct AstNode AstNode;
@@ -85,6 +87,8 @@ struct AstNode {
         struct { char *name; AstNode *expr; } assign;
         struct { AstNode *list; AstNode *index; AstNode *value; } assign_index; 
         struct { AstNode *target; AstNode *index; } index; 
+
+        struct { AstNode *expr; } logic_not; 
 
         struct { NodeList args; } print;
         struct { char *prompt; } input;
@@ -160,6 +164,7 @@ AstNode *ast_index(AstNode *target, AstNode *index);
 AstNode *ast_funcdef(const char *name, char **params, int count, NodeList body);
 AstNode *ast_return(AstNode *expr);
 AstNode *ast_assign_index(AstNode *list, AstNode *index, AstNode *value);
+AstNode *ast_not(AstNode *expr);
 
 void ast_free(AstNode *node);
 

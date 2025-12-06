@@ -54,6 +54,21 @@ typedef struct {
 static ReturnException return_exception = {0};
 static LoopException loop_exception = {0};
 
+// Centralized Truthiness Logic ~~~
+static int is_truthy(Value v) {
+    switch (v.type) {
+        case VAL_BOOL: return v.b;
+        case VAL_INT: return v.i != 0;
+        case VAL_FLOAT: return v.f != 0.0;
+        case VAL_STRING: return v.s && v.s[0] != '\0'; // Empty strings are false
+        case VAL_NULL: return 0;
+        case VAL_LIST: return 1; // Lists are always true (even empty ones, usually)
+        case VAL_NATIVE: return 1;
+        case VAL_CHAR: return v.c != 0;
+        default: return 0;
+    }
+}
+
 // Creates a new environment scope, linking it to a parent scope
 static Env *env_create(Env *parent) {
     Env *e = malloc(sizeof(Env));
@@ -313,6 +328,24 @@ static Value eval_expr(Env *e, AstNode *n) {
         }
         
         case NODE_BINOP: {
+            // ADDED: Logic Short-circuiting 
+            if (n->binop.op == OP_AND) {
+                Value l = eval_expr(e, n->binop.left);
+                if (!is_truthy(l)) {
+                    return l; // Short-circuit: return left (false)
+                }
+                value_free(l);
+                return eval_expr(e, n->binop.right);
+            }
+            if (n->binop.op == OP_OR) {
+                Value l = eval_expr(e, n->binop.left);
+                if (is_truthy(l)) {
+                    return l; // Short-circuit: return left (true)
+                }
+                value_free(l);
+                return eval_expr(e, n->binop.right);
+            }
+
             Value l = eval_expr(e, n->binop.left);
             Value r = eval_expr(e, n->binop.right);
             Value res = eval_binop(n->binop.op, l, r);
@@ -321,6 +354,13 @@ static Value eval_expr(Env *e, AstNode *n) {
             return res;
         }
         
+        // Unary NOT ---
+        case NODE_NOT: {
+            Value v = eval_expr(e, n->logic_not.expr);
+            Value res = value_bool(!is_truthy(v));
+            value_free(v);
+            return res;
+        }
         // List Indexing: list[index]
         case NODE_INDEX: {
             Value target = eval_expr(e, n->index.target);
@@ -473,11 +513,7 @@ static Value eval_expr(Env *e, AstNode *n) {
                 }
                 Value v = eval_expr(e, n->call.args.items[0]);
                 
-                // Check truthiness:
-                // 1. It is a BOOL and it is true (1)
-                // 2. It is an INT and it is NOT 0
-                int truthy = (v.type == VAL_BOOL && v.b) || (v.type == VAL_INT && v.i != 0);
-                
+                int truthy = is_truthy(v);                
                 if (!truthy) {
                     error_report(ERR_ASSERTION, 0, 0,
                         "Assertion failed - condition evaluated to false",
@@ -637,8 +673,7 @@ static Value exec_stmt(Env *e, AstNode *n) {
         }
         case NODE_IF: {
             Value v = eval_expr(e, n->ifstmt.cond);
-            // Check if condition is truthy
-            int t = (v.type == VAL_BOOL && v.b) || (v.type == VAL_INT && v.i);
+            int t = is_truthy(v);
             value_free(v);
 
             NodeList block = t ? n->ifstmt.then_block : n->ifstmt.else_block;
@@ -656,7 +691,7 @@ static Value exec_stmt(Env *e, AstNode *n) {
         case NODE_WHILE: {
             while (1) {
                 Value v = eval_expr(e, n->whilestmt.cond);
-                int t = (v.type == VAL_BOOL && v.b) || (v.type == VAL_INT && v.i);
+                int t = is_truthy(v);
                 value_free(v);
                 if (!t) {
                     break;
@@ -697,7 +732,7 @@ static Value exec_stmt(Env *e, AstNode *n) {
             while (1) {
                 // 2. Check Condition
                 Value c = eval_expr(scope, n->forstmt.cond);
-                int truthy = (c.type == VAL_BOOL && c.b) || (c.type == VAL_INT && c.i);
+                int truthy = is_truthy(c);
                 value_free(c);
 
                 if (!truthy) break; // Exit loop

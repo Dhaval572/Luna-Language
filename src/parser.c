@@ -447,6 +447,9 @@ static AstNode *statement(Parser *p) {
         AstNode *cond = expression(p);
         consume(p, T_RPAREN, "Expected ')' after condition");
 
+        // Allow newline between ')' and '{'
+        match(p, T_NEWLINE);
+
         NodeList then_b;
         nodelist_init(&then_b);
         consume(p, T_LBRACE, "Expected '{'");
@@ -454,11 +457,22 @@ static AstNode *statement(Parser *p) {
 
         NodeList else_b;
         nodelist_init(&else_b);
+
+        //Allow newline between '}' and 'else'
+        match(p, T_NEWLINE);
+
         if (match(p, T_ELSE)) {
+            // Allow newline after 'else' (before '{' or 'if')
+            match(p, T_NEWLINE);
+
             if (match(p, T_IF)) {
                 consume(p, T_LPAREN, "Expected '('");
                 AstNode *econd = expression(p);
                 consume(p, T_RPAREN, "Expected ')'");
+
+                // Allow newline before '{' in else-if
+                match(p, T_NEWLINE);
+
                 consume(p, T_LBRACE, "Expected '{'");
                 NodeList e_then;
                 nodelist_init(&e_then);
@@ -479,6 +493,10 @@ static AstNode *statement(Parser *p) {
         consume(p, T_LPAREN, "Expected '(' after while");
         AstNode *cond = expression(p);
         consume(p, T_RPAREN, "Expected ')'");
+
+        // Allow newline before '{' in while
+        match(p, T_NEWLINE);
+
         NodeList body;
         nodelist_init(&body);
         consume(p, T_LBRACE, "Expected '{'");
@@ -502,7 +520,9 @@ static AstNode *statement(Parser *p) {
         AstNode *incr = statement(p);
         consume(p, T_RPAREN, "Expected ')' after loop increment");
 
-        // 4. Body
+        // Allow newline before '{' in for
+        match(p, T_NEWLINE);
+
         NodeList body;
         nodelist_init(&body);
         consume(p, T_LBRACE, "Expected '{' for loop body");

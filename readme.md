@@ -4,7 +4,7 @@
 
 # Luna 
 
-This project implements a custom interpreted programming language written in C. It supports integers, floating-point numbers, strings, booleans, lists, variables, control flow (if/while/for/switch), and user-defined functions.
+Luna is my own self-initiated programming-language project—built from scratch in C—with the simple goal of creating something that’s easy to read, straightforward to work with, and fast af.
 
 ## Architecture Overview
 

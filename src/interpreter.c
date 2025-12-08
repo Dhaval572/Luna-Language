@@ -15,6 +15,11 @@
 #include "time_lib.h" 
 #include "luna_error.h"
 
+Value lib_vec_add(int argc, Value *argv);
+Value lib_vec_sub(int argc, Value *argv);
+Value lib_vec_mul(int argc, Value *argv);
+Value lib_vec_div(int argc, Value *argv);
+
 #define MAX_VARS 256
 #define MAX_FUNCS 64
 #define EPSILON 0.000001 // Tolerance for float comparison
@@ -982,4 +987,10 @@ void env_register_stdlib(Env *env) {
 
     // Time Library  
     env_def(env, "clock", value_native(lib_time_clock));
+   
+    // Vector Math
+    env_def(env, "vec_add", value_native(lib_vec_add));
+    env_def(env, "vec_sub", value_native(lib_vec_sub));
+    env_def(env, "vec_mul", value_native(lib_vec_mul));
+    env_def(env, "vec_div", value_native(lib_vec_div));
 }

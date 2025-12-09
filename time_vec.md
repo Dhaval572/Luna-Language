@@ -237,8 +237,118 @@ Below is a comparison of all four vectorized operations in Luna.
 * **C Bridge (`src/vec_lib.c`):** Handles memory packing—converting dynamic Luna values into contiguous C arrays that the CPU can process efficiently.
 
 * **Security:** All assembly files include the `.note.GNU-stack` section to ensure the stack is marked non-executable, complying with modern Linux security standards.
+## New: Now these is no need use use vec_add() manually The interpreter will automatically use ASM code for list[]
 
-## Sample code for benchmark
+
+### Sample code (Updated):
+```javascript
+print("=== Luna Operator Overloading Benchmark ===")
+print("Generating 50,000 items...")
+
+# 1. Setup Data
+let size = 50000
+let A = []
+let B = []
+
+# Generate data (ensure B has no zeros for division)
+for (let i = 0; i < size; i++) {
+    append(A, i + 1)        # 1, 2, 3...
+    append(B, (i % 10) + 1) # 1..10 (safe for division)
+}
+
+print("Data ready. Starting tests...\n")
+
+# --- TEST 1: ADDITION (+) ---
+print("1. Testing Addition (A + B)")
+let start = clock()
+let C_loop = []
+for (let i = 0; i < size; i++) {
+    append(C_loop, A[i] + B[i])
+}
+let mid = clock()
+
+# THE MAGIC: Using '+' triggers ASM automatically
+let C_asm = A + B
+
+let end = clock()
+
+let t_loop = mid - start
+let t_asm = end - mid
+print("   Loop:", t_loop, "s")
+print("   Op +:", t_asm, "s")
+print("   Speedup:", t_loop / t_asm, "x")
+assert(C_asm[0] == C_loop[0]) 
+assert(C_asm[size-1] == C_loop[size-1])
+
+
+# --- TEST 2: SUBTRACTION (-) ---
+print("\n2. Testing Subtraction (A - B)")
+start = clock()
+C_loop = []
+for (let i = 0; i < size; i++) {# bench_operators.lu
+    append(C_loop, A[i] - B[i])
+}
+mid = clock()
+
+# Magic: A - B
+C_asm = A - B
+
+end = clock()
+
+t_loop = mid - start
+t_asm = end - mid
+print("   Loop:", t_loop, "s")
+print("   Op -:", t_asm, "s")
+print("   Speedup:", t_loop / t_asm, "x")
+assert(C_asm[0] == C_loop[0])
+
+
+# --- TEST 3: MULTIPLICATION (*) ---
+print("\n3. Testing Multiplication (A * B)")
+start = clock()
+C_loop = []
+for (let i = 0; i < size; i++) {
+    append(C_loop, A[i] * B[i])
+}
+mid = clock()# bench_operators.lu
+
+# Magic: A * B
+C_asm = A * B
+
+end = clock()
+
+t_loop = mid - start
+t_asm = end - mid
+print("   Loop:", t_loop, "s")
+print("   Op *:", t_asm, "s")
+print("   Speedup:", t_loop / t_asm, "x")
+assert(C_asm[0] == C_loop[0])
+
+
+# --- TEST 4: DIVISION (/) ---
+print("\n4. Testing Division (A / B)")
+start = clock()
+C_loop = []
+for (let i = 0; i < size; i++) {
+    append(C_loop, A[i] / B[i])
+}
+mid = clock()
+
+# Magic: A / B
+C_asm = A / B
+
+end = clock()
+
+t_loop = mid - start
+t_asm = end - mid
+print("   Loop:", t_loop, "s")
+print("   Op /:", t_asm, "s")
+print("   Speedup:", t_loop / t_asm, "x")
+assert(C_asm[0] == C_loop[0])
+
+print("\n=== ALL OPERATOR TESTS PASSED ===")
+```
+## Sample code for benchmark (Manual)
 ```javascript
 print("=== Luna Vector Math Complete Benchmark ===")
 print("generating 50,000 items...")

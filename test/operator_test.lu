@@ -14,13 +14,11 @@ for (let i = 0; i < size; i++) {
 print("Running benchmarks...")
 let start = clock()
 
-# --- THE MAGIC HAPPENS HERE ---
 # Instead of vec_add(A, B), we just use '+'
 let Sum = A + B
 let Sub = A - B
 let Mul = A * B
 let Div = A / B
-# ------------------------------
 
 let end = clock()
 

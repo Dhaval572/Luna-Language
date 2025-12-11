@@ -1,5 +1,3 @@
-# test_logic.lu
-
 print("--- Testing Logical Operators with Assert ---")
 
 # 1. Basic AND (&&) / OR (||)

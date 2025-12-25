@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/luna.png" alt="Luna Logo" width="140">
+  <img src="../assets/luna.png" alt="Luna Logo" width="140">
 </p>
 
 # Luna 
@@ -109,6 +109,9 @@ This section contains detailed documentation for Luna’s standard library and c
 2. **String Functions**  
    String manipulation, formatting, and utilities.  
    → [View String Documentation](string.md)
+3. **File Functions**  
+   File creation,read-write to and from file.  
+   → [View File Documentation](File.md)
 
 ---
 

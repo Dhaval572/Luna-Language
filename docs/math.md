@@ -70,4 +70,3 @@
 | `rad_to_deg(rad)` | Converts radians to degrees.               | `rad_to_deg(3.14) → 179.9...` |
 | `lerp(a, b, t)`   | Linear interpolation between a and b by t. | `lerp(0, 100, 0.5) → 50.0`    |
 
-----

@@ -91,14 +91,9 @@ Output: The actual program results printed to the console.
 | float(x) | Converts string/int/bool to float. |
 |type(x)|Says the variable type int,float etc.
 
-# Standard Library Documentation
-
-## This section outlines the standard library functions available in Luna (.lu)
-
----
 # Luna Language – Documentation
 
-This section contains detailed documentation for Luna’s standard library and core features.
+This section contains documentation and sources for Luna’s standard library and core features.
 
 ## Modules
 
@@ -111,11 +106,9 @@ This section contains detailed documentation for Luna’s standard library and c
    → [View String Documentation](string.md)
 3. **File Functions**  
    File creation,read-write to and from file.  
-   → [View File Documentation](File.md)
+   → [View File Documentation](file.md)
 
 ---
-
-← [Back to Main README](../README.md)
 
 
 ## How to Build and Run
@@ -125,15 +118,14 @@ This section contains detailed documentation for Luna’s standard library and c
 make
 ```
 
-### 2. Run
+### 2. Run (Manually)
 ```
 ./luna myscript.lu
 ```
-or
+### or (let make file handle it. By deafult it will run "main.lu" You can modify it in make file )
 ```
 make run
 ```
-
 ### 3. Clean
 ```
 make clean

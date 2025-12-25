@@ -1,40 +1,23 @@
-let filename = "test.txt"
+func get_user_items() {
+    print("How many items do you want to add?")
+    
+    let count = int(input("Enter count: "))
+     
+    let list = []
+    
+    print("Okay, please enter", count, "items below:")
 
-# 1. Writing with our new newline support
-print("Writing to file...")
-let f_out = open(filename, "w")
-if (f_out) {
-    write(f_out, "First Line\n")
-    write(f_out, "Second Line with \t tabs\n")
-    write(f_out, "Third Line: \"Quotes inside!\"")
-    close(f_out)
-    print("Done writing.")
+  
+    for (let i = 0; i < count; i++) {
+        let e = input("> ")
+
+        append(list, e)
+    }
+    
+    return list
 }
 
-# 2. Checking if it exists
-if (file_exists(filename)) {
-    print("Verification: File exists on disk.")
-}
+let my_items = get_user_items()
 
-# 3. Reading line by line (Testing the \n fix)
-print("\nReading line by line:")
-let f_in = open(filename, "r")
-if (f_in) {
-    let l1 = read_line(f_in)
-    let l2 = read_line(f_in)
-    let l3 = read_line(f_in)
-    
-    print("L1: " + l1)
-    print("L2: " + l2)
-    print("L3: " + l3)
-    
-    # Testing our new polymorphic len()
-    print("Length of L1 is: " + len(l1))
-    
-    close(f_in)
-}
-
-# 4. Cleanup
-print("\nCleaning up...")
-remove_file(filename)
-print("File removed. Test Complete.")
+print("You collected:", my_items)
+print("Total items:", len(my_items))

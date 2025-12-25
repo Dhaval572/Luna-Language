@@ -73,8 +73,7 @@ static Value *get_mutable_value(Env *e, AstNode *n) {
         // Check bounds
         if (idx.i < 0 || idx.i >= list->list.count) {
             char msg[128];
-            snprintf(msg, sizeof(msg), "Index %lld is out of bounds for list of length %d", 
-                     idx.i, list->list.count);
+            snprintf(msg, sizeof(msg), "Index %lld is out of bounds for list of length %d", idx.i, list->list.count);
             // Updated to use n->line from the AST node
             error_report(ERR_INDEX, n->line, 0, msg,
                 "Check that your index is between 0 and len(list)-1");

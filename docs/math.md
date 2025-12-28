@@ -110,7 +110,8 @@ Simulate rolling multiple dice and calculate statistics.
 ```javascript
 # Roll a 6-sided die multiple times
 func roll_dice(num_rolls) {
-    srand(42)  # Seed for reproducible results
+    # Using trand() ensures every "make run" gives you new results
+    srand(trand()) 
     
     let rolls = []
     let total = 0
@@ -118,22 +119,23 @@ func roll_dice(num_rolls) {
     let max_roll = 1
     
     for (let i = 0; i < num_rolls; i++) {
-        let roll = randint(1, 6)
+        let roll = rand(1, 7) 
+        
         append(rolls, roll)
         total = total + roll
         
-        # Track min and max
         min_roll = min(min_roll, roll)
         max_roll = max(max_roll, roll)
     }
     
     let average = float(total) / float(num_rolls)
     
-    print("Rolls:", rolls)
-    print("Total:", total)
-    print("Average:", round(average))
-    print("Min Roll:", min_roll)
-    print("Max Roll:", max_roll)
+    print("Results")
+    print("Rolls:   ", rolls)
+    print("Total:   ", total)
+    print("Average: ", average)
+    print("Min:     ", min_roll)
+    print("Max:     ", max_roll)
 }
 
 roll_dice(10)

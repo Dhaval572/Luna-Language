@@ -8,7 +8,7 @@ REM ===============================
 set BUILD_DIR=build
 set CONFIG=Debug
 set EXE_NAME=luna.exe
-set EXE_PATH=%BUILD_DIR%\%CONFIG%\%EXE_NAME%
+set EXE_PATH=.\%BUILD_DIR%\%CONFIG%\%EXE_NAME%
 
 REM === Create build directory if missing ===
 if not exist "%BUILD_DIR%" (
@@ -23,7 +23,6 @@ if not exist "%BUILD_DIR%\CMakeCache.txt" (
 )
 
 REM === Build (incremental) ===
-@REM echo [INFO] Building (incremental)...
 cmake --build "%BUILD_DIR%" --config %CONFIG% || exit /b 1
 
 REM === If no script provided, stop here ===
@@ -38,8 +37,7 @@ if not exist "%~1" (
     exit /b 1
 )
 
-REM === Run the script ===
-@REM echo [INFO] Running script: %~1
+REM === Run the script (EXACT path like screenshot) ===
 "%EXE_PATH%" "%~1"
 
 endlocal

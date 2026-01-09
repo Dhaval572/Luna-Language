@@ -7,7 +7,6 @@ obj/
 *.exe
 *.out
 a.out
-luna
 debug_tokens
 build/
 *.dSYM/

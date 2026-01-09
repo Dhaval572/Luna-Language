@@ -20,4 +20,4 @@ func get_user_items() {
 let my_items = get_user_items()
 
 print("You collected:", my_items)
-print("Total items:", len(my_items")
+print("Total items:", len("my_items"))

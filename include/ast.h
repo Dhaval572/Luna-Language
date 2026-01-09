@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef AST_H
-#define AST_H
+#pragma once
 
 #include "value.h"
 
@@ -167,5 +166,3 @@ AstNode *ast_assign_index(AstNode *list, AstNode *index, AstNode *value, int lin
 AstNode *ast_not(AstNode *expr, int line);
 
 void ast_free(AstNode *node);
-
-#endif

@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef MATH_LIB_H
-#define MATH_LIB_H
+#pragma once
 
 #include <stdint.h>
 #include "value.h"
@@ -56,5 +55,3 @@ Value lib_math_trand(int argc, Value *argv); // True randomness via OS
 Value lib_math_deg_to_rad(int argc, Value *argv);
 Value lib_math_rad_to_deg(int argc, Value *argv);
 Value lib_math_lerp(int argc, Value *argv);
-
-#endif

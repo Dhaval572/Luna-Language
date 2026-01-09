@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef VALUE_H
-#define VALUE_H
-#include <stdio.h> 
+#pragma once
+#include <stdio.h>
 
 typedef struct Value Value; // Forward decl
 
@@ -57,5 +56,3 @@ void value_free(Value v);
 Value value_copy(Value v);
 char *value_to_string(Value v);
 void value_list_append(Value *list, Value v); 
-
-#endif

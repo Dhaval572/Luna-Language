@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef ENV_H
-#define ENV_H
+#pragma once
 
 #include "value.h"
 #include "ast.h"
@@ -26,5 +25,3 @@ void env_assign(Env *e, const char *name, Value val);
 // Function Definition Management
 void env_def_func(Env *e, const char *name, AstNode *def);
 AstNode *env_get_func(Env *e, const char *name);
-
-#endif

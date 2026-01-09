@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef LEXER_H
-#define LEXER_H
+#pragma once
 
 #include <stddef.h>
+#include <string>
 #include "token.h"
 
-typedef struct {
+typedef struct 
+{
     const char *src;
     size_t pos;
     size_t len;
@@ -19,5 +20,3 @@ typedef struct {
 Lexer lexer_create(const char *source);
 Token lexer_next(Lexer *L);
 void free_token(Token *t);
-
-#endif

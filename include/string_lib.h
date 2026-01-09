@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef STRING_LIB_H
-#define STRING_LIB_H
+#pragma once
 
 #include "value.h"
 
@@ -48,5 +47,3 @@ Value lib_str_is_space(int argc, Value *argv);
 // Type Conversion [[]]]]
 Value lib_str_to_int(int argc, Value *argv);
 Value lib_str_to_float(int argc, Value *argv);
-
-#endif

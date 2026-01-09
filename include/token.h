@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
+#pragma once
 
-#ifndef TOKEN_H
-#define TOKEN_H
-
-typedef enum {
+typedef enum 
+{
     T_EOF = 0,
     T_IDENT,
     T_NUMBER, // Integers (long long)
@@ -78,5 +77,3 @@ typedef struct {
 
 // Returns the string representation of a token type
 const char *token_name(TokenType t);
-
-#endif

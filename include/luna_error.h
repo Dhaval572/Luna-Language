@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef ERROR_H
-#define ERROR_H
-
+#pragma once
 // Added global line tracker to solve the "Line 0" problem
 extern int luna_current_line;
 
@@ -39,5 +37,3 @@ const char *error_type_name(ErrorType type);
 // Helper to suggest based on common mistakes
 const char *suggest_for_unexpected_token(const char *found, const char *expected);
 const char *suggest_for_undefined_var(const char *var_name);
-
-#endif

@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#ifndef VEC_LIB_H
-#define VEC_LIB_H
-
+#pragma once
 #include "value.h"
 
 // Direct C-callable functions (for Operator Overloading)
@@ -17,5 +15,3 @@ Value lib_vec_add(int argc, Value *argv);
 Value lib_vec_sub(int argc, Value *argv);
 Value lib_vec_mul(int argc, Value *argv);
 Value lib_vec_div(int argc, Value *argv);
-
-#endif

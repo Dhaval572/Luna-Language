@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <locale.h> // Required for setlocale
+#include <locale.h> 
 #include "util.h"
 #include "parser.h"
 #include "interpreter.h"
@@ -12,25 +12,29 @@
 #include "luna_error.h"
 #include "env.h"
 #include "library.h"
-#include "math_lib.h" // Required for lib_math_srand auto-seed
+#include "math_lib.h" 
 
 #define MAX_INPUT 1024
 
 // Interactive Read-Eval-Print Loop
-void run_repl(Env *env) {
+void run_repl(Env *env)
+{
     char line[MAX_INPUT];
     printf("Luna v0.1 REPL\nType 'exit' or Ctrl+C to quit.\n");
 
-    while (1) {
+    while (1)
+    {
         printf("> ");
-        
-        if (!fgets(line, sizeof(line), stdin)) {
+
+        if (!fgets(line, sizeof(line), stdin))
+        {
             printf("\n");
             break; // Handle EOF (Ctrl+D) gracefully
         }
 
         // Check for exit command
-        if (strncmp(line, "exit", 4) == 0) {
+        if (strncmp(line, "exit", 4) == 0)
+        {
             break;
         }
 
@@ -39,13 +43,14 @@ void run_repl(Env *env) {
 
         Parser parser;
         parser_init(&parser, line);
-        
+
         AstNode *prog = parser_parse_program(&parser);
 
-        //Clean up the parser (freeing the last token) immediately after parsing
+        // Clean up the parser (freeing the last token) immediately after parsing
         parser_close(&parser);
 
-        if (prog) {
+        if (prog)
+        {
             interpret(prog, env);
             ast_free(prog);
         }
@@ -53,12 +58,14 @@ void run_repl(Env *env) {
     }
 }
 
-static int ends_with_lu(const char *s) {
+static int ends_with_lu(const char *s)
+{
     size_t n = strlen(s);
     return n >= 3 && strcmp(s + n - 3, ".lu") == 0;
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char **argv)
+{
     // Force standard "C" locale to ensure '.' is treated as a decimal point
     // regardless of the user's system language settings.
     setlocale(LC_ALL, "C");
@@ -73,12 +80,16 @@ int main(int argc, char **argv) {
     // Passing 0 and NULL triggers the internal get_os_entropy() fallback
     lib_math_srand(0, NULL);
 
-    if (argc < 2) {
+    if (argc < 2)
+    {
         // No file provided: Run REPL mode
         run_repl(global_env);
-    } else {
-        
-        if (!ends_with_lu(argv[1])) {
+    }
+    else
+    {
+
+        if (!ends_with_lu(argv[1]))
+        {
             fprintf(stderr, "Error: expected a .lu file\n");
             env_free_global(global_env);
             return 1;
@@ -86,7 +97,8 @@ int main(int argc, char **argv) {
 
         // File provided: Run File mode
         char *src = read_file(argv[1]);
-        if (!src) {
+        if (!src)
+        {
             fprintf(stderr, "Could not read file: %s\n", argv[1]);
             env_free_global(global_env);
             return 1;
@@ -100,10 +112,11 @@ int main(int argc, char **argv) {
 
         AstNode *prog = parser_parse_program(&parser);
 
-        //Clean up the parser (freeing the last token) immediately after parsing
+        // Clean up the parser (freeing the last token) immediately after parsing
         parser_close(&parser);
 
-        if (!prog) {
+        if (!prog)
+        {
             fprintf(stderr, "Parsing failed.\n");
             free(src);
             env_free_global(global_env);

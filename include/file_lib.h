@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
-
-#ifndef FILE_LIB_H
-#define FILE_LIB_H
-
+#pragma once
 #include "value.h"
 
 // File Management
@@ -20,5 +17,3 @@ Value lib_file_append(int argc, Value *argv);
 Value lib_file_exists(int argc, Value *argv);
 Value lib_file_remove(int argc, Value *argv);
 Value lib_file_flush(int argc, Value *argv);
-
-#endif

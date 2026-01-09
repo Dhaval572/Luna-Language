@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "../include/luna_error.h"
+#include <luna/luna_error.h>
 
 // Initialize the global tracker
 int luna_current_line = 0;

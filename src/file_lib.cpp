@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/file_lib.h"
-#include "../include/value.h"
-#include "mystr.h"
+#include <luna/file_lib.h>
+#include <luna/value.h>
+#include <luna/mystr.h>
 
 // Helper: Safely extract the FILE pointer from a Luna Value
 static FILE *get_file_ptr(Value v)

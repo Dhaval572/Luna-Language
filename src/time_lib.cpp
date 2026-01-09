@@ -8,8 +8,8 @@
 #else
 #include <time.h>
 #endif
-#include "value.h"
-#include "time_lib.h"
+#include <luna/value.h>
+#include <luna/time_lib.h>
 
 #ifndef _WIN32
 // Declare the external assembly function

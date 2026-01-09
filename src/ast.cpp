@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#include <stdlib.h>
-#include <string.h>
-#include "../include/ast.h"
-#include "../include/mystr.h"
+#include <cstdlib>
+#include <variant>
+#include <type_traits>
 
-// Node List Management
+#include <luna/ast.h>
 
+// NodeList management
 void nodelist_init(NodeList *l)
 {
-    l->items = NULL;
+    l->items = nullptr;
     l->count = 0;
     l->capacity = 0;
 }
@@ -20,7 +20,7 @@ void nodelist_push(NodeList *l, AstNode *n)
     if (l->count >= l->capacity)
     {
         int nc = (l->capacity == 0) ? 4 : l->capacity * 2;
-        l->items = (AstNode**)realloc(l->items, sizeof(AstNode *) * nc);
+        l->items = (AstNode **)realloc(l->items, sizeof(AstNode *) * nc);
         l->capacity = nc;
     }
     l->items[l->count++] = n;
@@ -28,359 +28,273 @@ void nodelist_push(NodeList *l, AstNode *n)
 
 void nodelist_free(NodeList *l)
 {
-    if (!l)
-    {
-        return;
-    }
+    if (!l) return;
+
     for (int i = 0; i < l->count; i++)
     {
         ast_free(l->items[i]);
     }
+
     free(l->items);
-    l->items = NULL;
+    l->items = nullptr;
     l->count = 0;
+    l->capacity = 0;
 }
 
-// AST Node Constructors
-
-static AstNode *mk(NodeKind k, int line)
-{
-    AstNode *n = (AstNode*)malloc(sizeof(AstNode));
-    if (n)
-    {
-        n->kind = k;
-        n->line = line;
-    }
-    return n;
-}
+// =========================
+// AST constructors
+// =========================
 
 AstNode *ast_number(long long v, int line)
 {
-    AstNode *n = mk(NODE_NUMBER, line);
-    n->number.value = v;
-    return n;
+    return new AstNode(NODE_NUMBER, line, NumberNode{v});
 }
 
 AstNode *ast_float(double v, int line)
 {
-    AstNode *n = mk(NODE_FLOAT, line);
-    n->fnumber.value = v;
-    return n;
+    return new AstNode(NODE_FLOAT, line, FloatNode{v});
 }
 
 AstNode *ast_string(const char *s, int line)
 {
-    AstNode *n = mk(NODE_STRING, line);
-    n->string.text = my_strdup(s);
-    return n;
+    return new AstNode(NODE_STRING, line, StringNode{s ? s : ""});
 }
 
 AstNode *ast_char(char c, int line)
 {
-    AstNode *n = mk(NODE_CHAR, line);
-    n->character.value = c;
-    return n;
+    return new AstNode(NODE_CHAR, line, CharNode{c});
 }
 
 AstNode *ast_bool(int v, int line)
 {
-    AstNode *n = mk(NODE_BOOL, line);
-    n->boolean.value = !!v;
-    return n;
+    return new AstNode(NODE_BOOL, line, BoolNode{(bool)v});
 }
 
 AstNode *ast_list(NodeList items, int line)
 {
-    AstNode *n = mk(NODE_LIST, line);
-    n->list.items = items;
-    return n;
+    return new AstNode(NODE_LIST, line, ListNode{items});
 }
 
 AstNode *ast_ident(const char *name, int line)
 {
-    AstNode *n = mk(NODE_IDENT, line);
-    n->ident.name = my_strdup(name);
-    return n;
+    return new AstNode(NODE_IDENT, line, IdentNode{name});
 }
 
-// Increment
 AstNode *ast_inc(const char *name, int line)
 {
-    AstNode *n = mk(NODE_INC, line);
-    n->inc.name = my_strdup(name);
-    return n;
+    return new AstNode(NODE_INC, line, IncNode{name});
 }
 
-// Decrement
 AstNode *ast_dec(const char *name, int line)
 {
-    AstNode *n = mk(NODE_DEC, line);
-    n->dec.name = my_strdup(name);
-    return n;
+    return new AstNode(NODE_DEC, line, DecNode{name});
 }
 
 AstNode *ast_binop(BinOpKind op, AstNode *l, AstNode *r, int line)
 {
-    AstNode *n = mk(NODE_BINOP, line);
-    n->binop.op = op;
-    n->binop.left = l;
-    n->binop.right = r;
-    return n;
+    return new AstNode(NODE_BINOP, line, BinOpNode{op, l, r});
 }
 
 AstNode *ast_let(const char *name, AstNode *expr, int line)
 {
-    AstNode *n = mk(NODE_LET, line);
-    n->let.name = my_strdup(name);
-    n->let.expr = expr;
-    return n;
+    return new AstNode(NODE_LET, line, LetNode{name, expr});
 }
 
 AstNode *ast_assign(const char *name, AstNode *expr, int line)
 {
-    AstNode *n = mk(NODE_ASSIGN, line);
-    n->assign.name = my_strdup(name);
-    n->assign.expr = expr;
-    return n;
+    return new AstNode(NODE_ASSIGN, line, AssignNode{name, expr});
 }
 
 AstNode *ast_print(NodeList args, int line)
 {
-    AstNode *n = mk(NODE_PRINT, line);
-    n->print.args = args;
-    return n;
+    return new AstNode(NODE_PRINT, line, PrintNode{args});
 }
 
 AstNode *ast_input(const char *prompt, int line)
 {
-    AstNode *n = mk(NODE_INPUT, line);
-    n->input.prompt = prompt ? my_strdup(prompt) : NULL;
-    return n;
+    return new AstNode(NODE_INPUT, line, InputNode{prompt ? prompt : ""});
 }
 
 AstNode *ast_if(AstNode *cond, NodeList then_b, NodeList else_b, int line)
 {
-    AstNode *n = mk(NODE_IF, line);
-    n->ifstmt.cond = cond;
-    n->ifstmt.then_block = then_b;
-    n->ifstmt.else_block = else_b;
-    return n;
+    return new AstNode(NODE_IF, line, IfNode{cond, then_b, else_b});
 }
 
 AstNode *ast_while(AstNode *cond, NodeList body, int line)
 {
-    AstNode *n = mk(NODE_WHILE, line);
-    n->whilestmt.cond = cond;
-    n->whilestmt.body = body;
-    return n;
-}
-
-AstNode *ast_break(int line)
-{
-    return mk(NODE_BREAK, line);
-}
-
-AstNode *ast_continue(int line)
-{
-    return mk(NODE_CONTINUE, line);
-}
-
-AstNode *ast_switch(AstNode *expr, NodeList cases, NodeList def, int line)
-{
-    AstNode *n = mk(NODE_SWITCH, line);
-    n->switchstmt.expr = expr;
-    n->switchstmt.cases = cases;
-    n->switchstmt.default_case = def;
-    return n;
-}
-
-AstNode *ast_case(AstNode *value, NodeList body, int line)
-{
-    AstNode *n = mk(NODE_CASE, line);
-    n->casestmt.value = value;
-    n->casestmt.body = body;
-    return n;
-}
-
-AstNode *ast_block(NodeList items, int line)
-{
-    AstNode *n = mk(NODE_BLOCK, line);
-    n->block.items = items;
-    return n;
-}
-
-AstNode *ast_group(NodeList items, int line)
-{
-    AstNode *n = mk(NODE_GROUP, line);
-    n->block.items = items;
-    return n;
-}
-
-AstNode *ast_call(const char *name, NodeList args, int line)
-{
-    AstNode *n = mk(NODE_CALL, line);
-    n->call.name = my_strdup(name);
-    n->call.args = args;
-    return n;
-}
-
-AstNode *ast_index(AstNode *target, AstNode *index, int line)
-{
-    AstNode *n = mk(NODE_INDEX, line);
-    n->index.target = target;
-    n->index.index = index;
-    return n;
-}
-
-AstNode *ast_funcdef(const char *name, char **params, int count, NodeList body, int line)
-{
-    AstNode *n = mk(NODE_FUNC_DEF, line);
-    n->funcdef.name = my_strdup(name);
-    n->funcdef.params = (char**)malloc(sizeof(char *) * count);
-    for (int i = 0; i < count; i++)
-    {
-        n->funcdef.params[i] = my_strdup(params[i]);
-    }
-    n->funcdef.param_count = count;
-    n->funcdef.body = body;
-    return n;
-}
-
-AstNode *ast_return(AstNode *expr, int line)
-{
-    AstNode *n = mk(NODE_RETURN, line);
-    n->ret.expr = expr;
-    return n;
+    return new AstNode(NODE_WHILE, line, WhileNode{cond, body});
 }
 
 AstNode *ast_for(AstNode *init, AstNode *cond, AstNode *incr, NodeList body, int line)
 {
-    AstNode *n = mk(NODE_FOR, line);
-    n->forstmt.init = init;
-    n->forstmt.cond = cond;
-    n->forstmt.incr = incr;
-    n->forstmt.body = body;
-    return n;
+    return new AstNode(NODE_FOR, line, ForNode{init, cond, incr, body});
+}
+
+AstNode *ast_break(int line)
+{
+	return new AstNode(NODE_BREAK, line, BreakNode{});
+}
+
+AstNode *ast_continue(int line)
+{
+	return new AstNode(NODE_CONTINUE, line, ContinueNode{});
+}
+
+AstNode *ast_group(NodeList items, int line)
+{
+    return new AstNode(NODE_GROUP, line, BlockNode{items});
+}
+
+AstNode *ast_switch(AstNode *expr, NodeList cases, NodeList def, int line)
+{
+    return new AstNode(NODE_SWITCH, line, SwitchNode{expr, cases, def});
+}
+
+AstNode *ast_case(AstNode *value, NodeList body, int line)
+{
+    return new AstNode(NODE_CASE, line, CaseNode{value, body});
+}
+
+AstNode *ast_block(NodeList items, int line)
+{
+    return new AstNode(NODE_BLOCK, line, BlockNode{items});
+}
+
+AstNode *ast_call(const char *name, NodeList args, int line)
+{
+    return new AstNode(NODE_CALL, line, CallNode{name, args});
+}
+
+AstNode *ast_index(AstNode *target, AstNode *index, int line)
+{
+    return new AstNode(NODE_INDEX, line, IndexNode{target, index});
+}
+
+AstNode *ast_funcdef(const char *name, char **params, int count, NodeList body, int line)
+{
+    std::vector<std::string> p;
+    for (int i = 0; i < count; i++)
+    {
+        p.emplace_back(params[i]);
+    }
+
+    return new AstNode
+    (
+        NODE_FUNC_DEF,
+        line,
+        FuncDefNode{name, std::move(p), body}
+    );
+}
+
+AstNode *ast_return(AstNode *expr, int line)
+{
+    return new AstNode(NODE_RETURN, line, ReturnNode{expr});
 }
 
 AstNode *ast_assign_index(AstNode *list, AstNode *index, AstNode *value, int line)
 {
-    AstNode *n = mk(NODE_ASSIGN_INDEX, line);
-    n->assign_index.list = list;
-    n->assign_index.index = index;
-    n->assign_index.value = value;
-    return n;
+    return new AstNode
+    (
+        NODE_ASSIGN_INDEX,
+        line,
+        AssignIndexNode{list, index, value}
+    );
 }
 
 AstNode *ast_not(AstNode *expr, int line)
 {
-    AstNode *n = mk(NODE_NOT, line);
-    n->logic_not.expr = expr;
-    return n;
+    return new AstNode(NODE_NOT, line, NotNode{expr});
 }
 
-// AST Node Destructor
 void ast_free(AstNode *n)
 {
-    if (!n)
-    {
-        return;
-    }
-    switch (n->kind)
-    {
-    case NODE_STRING:
-        free(n->string.text);
-        break;
-    case NODE_IDENT:
-        free(n->ident.name);
-        break;
-    case NODE_INC:
-        free(n->inc.name);
-        break;
-    case NODE_DEC:
-        free(n->dec.name);
-        break;
-    case NODE_LIST:
-        nodelist_free(&n->list.items);
-        break;
-    case NODE_BINOP:
-        ast_free(n->binop.left);
-        ast_free(n->binop.right);
-        break;
-    case NODE_LET:
-        free(n->let.name);
-        ast_free(n->let.expr);
-        break;
-    case NODE_ASSIGN:
-        free(n->assign.name);
-        ast_free(n->assign.expr);
-        break;
-    case NODE_PRINT:
-        nodelist_free(&n->print.args);
-        break;
-    case NODE_INPUT:
-        if (n->input.prompt)
+    if (!n) return;
+    
+    std::visit
+    (
+        [&](auto &node)
         {
-            free(n->input.prompt);
-        }
-        break;
-    case NODE_IF:
-        ast_free(n->ifstmt.cond);
-        nodelist_free(&n->ifstmt.then_block);
-        nodelist_free(&n->ifstmt.else_block);
-        break;
-    case NODE_WHILE:
-        ast_free(n->whilestmt.cond);
-        nodelist_free(&n->whilestmt.body);
-        break;
-    case NODE_FOR:
-        ast_free(n->forstmt.init);
-        ast_free(n->forstmt.cond);
-        ast_free(n->forstmt.incr);
-        nodelist_free(&n->forstmt.body);
-        break;
-    case NODE_SWITCH:
-        ast_free(n->switchstmt.expr);
-        nodelist_free(&n->switchstmt.cases);
-        nodelist_free(&n->switchstmt.default_case);
-        break;
-    case NODE_CASE:
-        ast_free(n->casestmt.value);
-        nodelist_free(&n->casestmt.body);
-        break;
-    case NODE_BLOCK:
-        nodelist_free(&n->block.items);
-        break;
-    case NODE_CALL:
-        free(n->call.name);
-        nodelist_free(&n->call.args);
-        break;
-    case NODE_INDEX:
-        ast_free(n->index.target);
-        ast_free(n->index.index);
-        break;
-    case NODE_FUNC_DEF:
-        free(n->funcdef.name);
-        for (int i = 0; i < n->funcdef.param_count; i++)
-        {
-            free(n->funcdef.params[i]);
-        }
-        free(n->funcdef.params);
-        nodelist_free(&n->funcdef.body);
-        break;
-    case NODE_RETURN:
-        ast_free(n->ret.expr);
-        break;
-    case NODE_ASSIGN_INDEX:
-        ast_free(n->assign_index.list);
-        ast_free(n->assign_index.index);
-        ast_free(n->assign_index.value);
-        break;
-    case NODE_NOT:
-        ast_free(n->logic_not.expr);
-        break;
-    default:
-        break;
-    }
-    free(n);
+            using T = std::decay_t<decltype(node)>;
+            if constexpr (std::is_same_v<T, BinOpNode>) 
+            {
+                ast_free(node.left);
+                ast_free(node.right);
+            }
+            else if constexpr 
+            (
+                std::is_same_v<T, LetNode> ||
+                std::is_same_v<T, AssignNode>
+            ) 
+            {
+                ast_free(node.expr);
+            }
+            else if constexpr (std::is_same_v<T, IfNode>) 
+            {
+                ast_free(node.cond);
+                nodelist_free(&node.then_block);
+                nodelist_free(&node.else_block);
+            }
+            else if constexpr (std::is_same_v<T, WhileNode>) 
+            {
+                ast_free(node.cond);
+                nodelist_free(&node.body);
+            }
+            else if constexpr (std::is_same_v<T, ForNode>) 
+            {
+                ast_free(node.init);
+                ast_free(node.cond);
+                ast_free(node.incr);
+                nodelist_free(&node.body);
+            }
+            else if constexpr (std::is_same_v<T, SwitchNode>) 
+            {
+                ast_free(node.expr);
+                nodelist_free(&node.cases);
+                nodelist_free(&node.default_case);
+            }
+            else if constexpr (std::is_same_v<T, CaseNode>) 
+            {
+                ast_free(node.value);
+                nodelist_free(&node.body);
+            }
+            else if constexpr (std::is_same_v<T, BlockNode>) 
+            {
+                nodelist_free(&node.items);
+            }
+            else if constexpr (std::is_same_v<T, CallNode>) 
+            {
+                nodelist_free(&node.args);
+            }
+            else if constexpr (std::is_same_v<T, FuncDefNode>) 
+            {
+                nodelist_free(&node.body);
+            }
+            else if constexpr (std::is_same_v<T, ReturnNode>) 
+            {
+                ast_free(node.expr);
+            }
+            else if constexpr (std::is_same_v<T, AssignIndexNode>) 
+            {
+                ast_free(node.list);
+                ast_free(node.index);
+                ast_free(node.value);
+            }
+            else if constexpr (std::is_same_v<T, NotNode>) 
+            {
+                ast_free(node.expr);
+            } 
+
+            else if constexpr
+            (
+                std::is_same_v<T, BreakNode> || 
+                std::is_same_v<T, ContinueNode>
+            )
+            {
+                // TODO
+            }
+        }, 
+        n->data
+    );
+
+    delete n;
 }

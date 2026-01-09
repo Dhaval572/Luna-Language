@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/util.h"
+#include <luna/util.h>
 
 // Reads the entire content of a file into a dynamically allocated string.
 // Returns NULL if the file cannot be opened or read.

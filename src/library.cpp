@@ -7,15 +7,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "library.h"
-#include "value.h"
-#include "luna_error.h"
-#include "math_lib.h"
-#include "string_lib.h"
-#include "time_lib.h"
-#include "vec_lib.h"
-#include "file_lib.h"
-#include "list_lib.h" // Added for sort and shuffle
+#include <luna/library.h>
+#include <luna/value.h>
+#include <luna/luna_error.h>
+#include <luna/math_lib.h>
+#include <luna/string_lib.h>
+#include <luna/time_lib.h>
+#include <luna/vec_lib.h>
+#include <luna/file_lib.h>
+#include <luna/list_lib.h> // Added for sort and shuffle
 
 // Helper: Local truthiness check for assert
 // (This logic mirrors the interpreter's is_truthy to keep modules decoupled)

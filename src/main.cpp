@@ -5,14 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 #include <locale.h> 
-#include "util.h"
-#include "parser.h"
-#include "interpreter.h"
-#include "ast.h"
-#include "luna_error.h"
-#include "env.h"
-#include "library.h"
-#include "math_lib.h" 
+#include <luna/util.h>
+#include <luna/parser.h>
+#include <luna/interpreter.h>
+#include <luna/ast.h>
+#include <luna/luna_error.h>
+#include <luna/env.h>
+#include <luna/library.h>
+#include <luna/math_lib.h>
 
 #define MAX_INPUT 1024
 

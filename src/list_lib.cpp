@@ -4,10 +4,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/list_lib.h"
-#include "../include/value.h"
-#include "../include/math_lib.h" // For math_internal_next()
-#include "../include/luna_error.h"
+#include <luna/list_lib.h>
+#include <luna/value.h>
+#include <luna/math_lib.h> // For math_internal_next()
+#include <luna/luna_error.h>
 
 // Threshold for switching from Merge Sort to Insertion Sort
 #define SORT_THRESHOLD 16

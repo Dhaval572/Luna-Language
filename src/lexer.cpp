@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include "../include/lexer.h"
-#include "../include/token.h"
-#include "../include/mystr.h"
+#include <luna/lexer.h>
+#include <luna/token.h>
+#include <luna/mystr.h>
 
 // Returns the character at the current position without advancing
 static int lx_at(Lexer *L)

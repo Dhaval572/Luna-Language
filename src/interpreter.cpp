@@ -6,14 +6,14 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h> // Added for fabs()
-#include "../include/interpreter.h"
-#include "../include/ast.h"
-#include "../include/value.h"
-#include "../include/mystr.h"
-#include "../include/env.h"
-#include "../include/library.h"
-#include "../include/luna_error.h"
-#include "../include/vec_lib.h"
+#include <luna/interpreter.h>
+#include <luna/ast.h>
+#include <luna/value.h>
+#include <luna/mystr.h>
+#include <luna/env.h>
+#include <luna/library.h>
+#include <luna/luna_error.h>
+#include <luna/vec_lib.h>
 
 #define EPSILON 0.000001 // Tolerance for float comparison
 
@@ -71,21 +71,21 @@ static Value *get_mutable_value(Env *e, AstNode *n)
 {
     if (n->kind == NODE_IDENT)
     {
-        return env_get(e, n->ident.name);
+        return env_get(e, n->get<IdentNode>().name.c_str());
     }
     else if (n->kind == NODE_INDEX)
     {
         // Recursively get the parent list
-        Value *list = get_mutable_value(e, n->index.target);
+        Value *list = get_mutable_value(e, n->get<IndexNode>().target);
         if (!list || list->type != VAL_LIST)
-            return NULL;
+            return nullptr;
 
         // Evaluate index
-        Value idx = eval_expr(e, n->index.index);
+         Value idx = eval_expr(e, n->get<IndexNode>().index);
         if (idx.type != VAL_INT)
         {
             value_free(idx);
-            return NULL;
+            return nullptr;
         }
 
         // Check bounds
@@ -97,7 +97,7 @@ static Value *get_mutable_value(Env *e, AstNode *n)
             error_report(ERR_INDEX, n->line, 0, msg,
                          "Check that your index is between 0 and len(list)-1");
             value_free(idx);
-            return NULL;
+            return nullptr;
         }
 
         // Return pointer to the specific item slot
@@ -105,7 +105,7 @@ static Value *get_mutable_value(Env *e, AstNode *n)
         value_free(idx);
         return item_ptr;
     }
-    return NULL;
+    return nullptr;
 }
 
 // Handles binary operations like +, -, *, /, comparison
@@ -125,8 +125,9 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
         case OP_DIV:
             if (r.i == 0)
                 return value_int(0);
+
             // Return float for division to allow decimals
-            return value_float((double)l.i / (double)r.i);
+            return value_float(static_cast<double>(l.i) / static_cast<double>(r.i));
         case OP_MOD:
             return value_int(l.i % r.i);
         case OP_EQ:
@@ -283,23 +284,24 @@ static Value eval_expr(Env *e, AstNode *n)
     switch (n->kind)
     {
     case NODE_NUMBER:
-        return value_int(n->number.value);
+        return value_int(n->get<NumberNode>().value);  
     case NODE_FLOAT:
-        return value_float(n->fnumber.value);
+        return value_float(n->get<FloatNode>().value); 
     case NODE_STRING:
-        return value_string(n->string.text);
+        return value_string(n->get<StringNode>().text.c_str());
     case NODE_CHAR:
-        return value_char(n->character.value);
+        return value_char(n->get<CharNode>().value);
     case NODE_BOOL:
-        return value_bool(n->boolean.value);
+    return value_bool(n->get<BoolNode>().value);  
 
     // Recursively evaluate items in a list literal
     case NODE_LIST:
     {
         Value v = value_list();
-        for (int i = 0; i < n->list.items.count; i++)
+        ListNode& list_node = n->get<ListNode>();
+        for (int i = 0; i < list_node.items.count; i++)
         {
-            Value item = eval_expr(e, n->list.items.items[i]);
+            Value item = eval_expr(e, list_node.items.items[i]);
             value_list_append(&v, item);
             value_free(item);
         }
@@ -309,46 +311,46 @@ static Value eval_expr(Env *e, AstNode *n)
     // Variable lookup
     case NODE_IDENT:
     {
-        Value *v = env_get(e, n->ident.name);
+        Value *v = env_get(e, n->get<IdentNode>().name.c_str());
         return v ? value_copy(*v) : value_null();
     }
 
     case NODE_BINOP:
     {
+        BinOpNode& binop = n->get<BinOpNode>();  
         // ADDED: Logic Short-circuiting
-        if (n->binop.op == OP_AND)
+        if (binop.op == OP_AND)
         {
-            Value l = eval_expr(e, n->binop.left);
+            Value l = eval_expr(e, binop.left);  
             if (!is_truthy(l))
             {
-                return l; // Short-circuit: return left (false)
+                return l;
             }
             value_free(l);
-            return eval_expr(e, n->binop.right);
+            return eval_expr(e, binop.right);  
         }
-        if (n->binop.op == OP_OR)
+        if (binop.op == OP_OR)
         {
-            Value l = eval_expr(e, n->binop.left);
+            Value l = eval_expr(e, binop.left);  
             if (is_truthy(l))
             {
-                return l; // Short-circuit: return left (true)
+                return l;
             }
             value_free(l);
-            return eval_expr(e, n->binop.right);
+            return eval_expr(e, binop.right);  
         }
 
-        Value l = eval_expr(e, n->binop.left);
-        Value r = eval_expr(e, n->binop.right);
-        Value res = eval_binop(n->binop.op, l, r);
+        Value l = eval_expr(e, binop.left);  
+        Value r = eval_expr(e, binop.right);  
+        Value res = eval_binop(binop.op, l, r);  
         value_free(l);
         value_free(r);
         return res;
     }
 
-    // Unary NOT ---
     case NODE_NOT:
     {
-        Value v = eval_expr(e, n->logic_not.expr);
+        Value v = eval_expr(e, n->get<NotNode>().expr);  
         Value res = value_bool(!is_truthy(v));
         value_free(v);
         return res;
@@ -356,8 +358,9 @@ static Value eval_expr(Env *e, AstNode *n)
     // List Indexing: list[index]
     case NODE_INDEX:
     {
-        Value target = eval_expr(e, n->index.target);
-        Value idx = eval_expr(e, n->index.index);
+        IndexNode& index_node = n->get<IndexNode>();
+        Value target = eval_expr(e, index_node.target);
+        Value idx = eval_expr(e, index_node.index);
         if (target.type == VAL_LIST && idx.type == VAL_INT)
         {
             if (idx.i >= 0 && idx.i < target.list.count)
@@ -376,7 +379,7 @@ static Value eval_expr(Env *e, AstNode *n)
     //  Increment Operator (++)
     case NODE_INC:
     {
-        Value *v = env_get(e, n->inc.name);
+        Value *v = env_get(e, n->get<IncNode>().name.c_str());
         if (v && v->type == VAL_INT)
         {
             Value old = value_copy(*v);
@@ -395,7 +398,7 @@ static Value eval_expr(Env *e, AstNode *n)
     // Decrement Operator (--)
     case NODE_DEC:
     {
-        Value *v = env_get(e, n->dec.name);
+        Value *v = env_get(e, n->get<DecNode>().name.c_str());
         if (v && v->type == VAL_INT)
         {
             Value old = value_copy(*v);
@@ -414,34 +417,39 @@ static Value eval_expr(Env *e, AstNode *n)
     // Function Calls
     case NODE_CALL:
     {
+        CallNode& call_node = n->get<CallNode>();
         // Built-in: len()
-        if (!strcmp(n->call.name, "len"))
+        if (!strcmp(call_node.name.c_str(), "len"))
         {
-            if (n->call.args.count == 1)
+            if (call_node.args.count == 1)
             {
-                Value v = eval_expr(e, n->call.args.items[0]);
+                Value v = eval_expr(e, call_node.args.items[0]);
                 int len = 0;
                 if (v.type == VAL_STRING)
+                {
                     len = strlen(v.s);
+                }
                 if (v.type == VAL_LIST)
+                {
                     len = v.list.count;
+                }
                 value_free(v);
                 return value_int(len);
             }
         }
 
         // Built-in: append(list, value)
-        if (!strcmp(n->call.name, "append"))
+        if (!strcmp(call_node.name.c_str(), "append"))
         {
-            if (n->call.args.count != 2)
+            if (call_node.args.count != 2)
             {
                 fprintf(stderr, "Runtime Error: append() takes 2 arguments (list, value)\n");
                 return value_null();
             }
 
             // Get the MUTABLE pointer to the list variable, not a copy!
-            Value *list_ptr = get_mutable_value(e, n->call.args.items[0]);
-            Value item_val = eval_expr(e, n->call.args.items[1]);
+            Value *list_ptr = get_mutable_value(e, call_node.args.items[0]);
+            Value item_val = eval_expr(e, call_node.args.items[1]);
 
             if (list_ptr && list_ptr->type == VAL_LIST)
             {
@@ -460,11 +468,11 @@ static Value eval_expr(Env *e, AstNode *n)
         }
 
         // Built-in: type() - Returns type name ("int", "long", "float", etc)
-        if (!strcmp(n->call.name, "type"))
+        if (!strcmp(call_node.name.c_str(), "type"))
         {
-            if (n->call.args.count == 1)
+            if (call_node.args.count == 1)
             {
-                Value v = eval_expr(e, n->call.args.items[0]);
+                Value v = eval_expr(e, call_node.args.items[0]);
                 const char *tname = "unknown";
                 switch (v.type)
                 {
@@ -508,11 +516,11 @@ static Value eval_expr(Env *e, AstNode *n)
         }
 
         // Built-in: int()
-        if (!strcmp(n->call.name, "int"))
+        if (!strcmp(call_node.name.c_str(), "int"))
         {
-            if (n->call.args.count == 1)
+            if (call_node.args.count == 1)
             {
-                Value v = eval_expr(e, n->call.args.items[0]);
+                Value v = eval_expr(e, call_node.args.items[0]);
                 long long res = 0;
                 if (v.type == VAL_STRING)
                     res = atoll(v.s);
@@ -529,11 +537,11 @@ static Value eval_expr(Env *e, AstNode *n)
             }
         }
         // Built-in: float()
-        if (!strcmp(n->call.name, "float"))
+        if (!strcmp(call_node.name.c_str(), "float"))
         {
-            if (n->call.args.count == 1)
+            if (call_node.args.count == 1)
             {
-                Value v = eval_expr(e, n->call.args.items[0]);
+                Value v = eval_expr(e, call_node.args.items[0]);
                 double res = 0.0;
                 if (v.type == VAL_STRING)
                     res = atof(v.s);
@@ -549,24 +557,25 @@ static Value eval_expr(Env *e, AstNode *n)
         }
 
         // 1. Check for User defined function
-        AstNode *fn = env_get_func(e, n->call.name);
+        AstNode *fn = env_get_func(e, call_node.name.c_str());
         if (fn)
         {
             // Create new scope for function execution
             Env *scope = env_create(e);
 
             // Map arguments to parameters
-            for (int i = 0; i < fn->funcdef.param_count; i++)
+            FuncDefNode& funcdef = fn->get<FuncDefNode>();
+            for (size_t i = 0; i < funcdef.params.size(); i++)
             {
-                Value v = (i < n->call.args.count) ? eval_expr(e, n->call.args.items[i]) : value_null();
-                env_def(scope, fn->funcdef.params[i], v);
+                Value v = (i < call_node.args.count) ? eval_expr(e, call_node.args.items[i]) : value_null();
+                env_def(scope, funcdef.params[i].c_str(), v);
                 value_free(v);
             }
 
             // Execute function body
-            for (int i = 0; i < fn->funcdef.body.count; i++)
+            for (int i = 0; i < funcdef.body.count; i++)
             {
-                exec_stmt(scope, fn->funcdef.body.items[i]);
+                exec_stmt(scope, funcdef.body.items[i]);
                 if (return_exception.active)
                     break;
             }
@@ -583,30 +592,30 @@ static Value eval_expr(Env *e, AstNode *n)
         }
 
         // 2. Check for Native Function (Registered in Variables)
-        Value *native_val = env_get(e, n->call.name);
+        Value *native_val = env_get(e, call_node.name.c_str());
         if (native_val && native_val->type == VAL_NATIVE)
         {
             // Evaluate Arguments first
-            int argc = n->call.args.count;
+            int argc = call_node.args.count;
             Value *argv = (Value*)malloc(sizeof(Value) * argc);
             for (int i = 0; i < argc; i++)
             {
                 // Fixed it, now it Passes list identifiers by reference to allow in-place modification
-                if (n->call.args.items[i]->kind == NODE_IDENT)
+                if (call_node.args.items[i]->kind == NODE_IDENT)
                 {
-                    Value *env_ref = env_get(e, n->call.args.items[i]->ident.name);
+                    Value *env_ref = env_get(e, call_node.args.items[i]->get<IdentNode>().name.c_str());
                     if (env_ref && env_ref->type == VAL_LIST)
                     {
                         argv[i] = *env_ref; // Pass direct reference
                     }
                     else
                     {
-                        argv[i] = eval_expr(e, n->call.args.items[i]);
+                        argv[i] = eval_expr(e, call_node.args.items[i]);
                     }
                 }
                 else
                 {
-                    argv[i] = eval_expr(e, n->call.args.items[i]);
+                    argv[i] = eval_expr(e, call_node.args.items[i]);
                 }
             }
 
@@ -617,7 +626,7 @@ static Value eval_expr(Env *e, AstNode *n)
             for (int i = 0; i < argc; i++)
             {
                 // Only free if it was a deep-copied expression, not an environment reference
-                if (n->call.args.items[i]->kind != NODE_IDENT)
+                if (call_node.args.items[i]->kind != NODE_IDENT)
                 {
                     value_free(argv[i]);
                 }
@@ -631,10 +640,11 @@ static Value eval_expr(Env *e, AstNode *n)
 
     case NODE_INPUT:
     {
+        InputNode& input_node = n->get<InputNode>();
         char buf[256];
-        if (n->input.prompt)
+        if (!input_node.prompt.empty())
         {
-            printf("%s", n->input.prompt);
+            printf("%s", input_node.prompt.c_str());
         }
         if (fgets(buf, 256, stdin))
         {
@@ -665,24 +675,27 @@ static Value exec_stmt(Env *e, AstNode *n)
     {
     case NODE_LET:
     {
-        Value v = eval_expr(e, n->let.expr);
-        env_def(e, n->let.name, v);
+        LetNode& let_node = n->get<LetNode>();
+        Value v = eval_expr(e, let_node.expr);
+        env_def(e, let_node.name.c_str(), v);
         value_free(v);
         return value_null();
     }
     case NODE_ASSIGN:
     {
-        Value v = eval_expr(e, n->assign.expr);
-        env_assign(e, n->assign.name, v);
+        AssignNode& assign_node = n->get<AssignNode>();
+        Value v = eval_expr(e, assign_node.expr);
+        env_assign(e, assign_node.name.c_str(), v);
         value_free(v);
         return value_null();
     }
     case NODE_ASSIGN_INDEX:
     {
-        Value val = eval_expr(e, n->assign_index.value);
+        AssignIndexNode& assign_idx = n->get<AssignIndexNode>();
+        Value val = eval_expr(e, assign_idx.value);
 
         // Get pointer to the actual list item in the environment
-        Value *target = get_mutable_value(e, n->assign_index.list);
+        Value *target = get_mutable_value(e, assign_idx.list);
 
         // Verify target is actually a list
         if (!target || target->type != VAL_LIST)
@@ -696,7 +709,7 @@ static Value exec_stmt(Env *e, AstNode *n)
         }
 
         // Evaluate the index
-        Value idx = eval_expr(e, n->assign_index.index);
+        Value idx = eval_expr(e, assign_idx.index);
         if (idx.type != VAL_INT)
         {
             // Use node line number
@@ -733,9 +746,10 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_PRINT:
     {
-        for (int i = 0; i < n->print.args.count; i++)
+        PrintNode& print_node = n->get<PrintNode>();
+        for (int i = 0; i < print_node.args.count; i++)
         {
-            Value v = eval_expr(e, n->print.args.items[i]);
+            Value v = eval_expr(e, print_node.args.items[i]);
             char *s = value_to_string(v);
             printf("%s ", s);
             free(s);
@@ -746,11 +760,12 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_IF:
     {
-        Value v = eval_expr(e, n->ifstmt.cond);
+        IfNode& if_node = n->get<IfNode>();
+        Value v = eval_expr(e, if_node.cond);
         int t = is_truthy(v);
         value_free(v);
 
-        NodeList block = t ? n->ifstmt.then_block : n->ifstmt.else_block;
+        NodeList block = t ? if_node.then_block : if_node.else_block;
         Env *scope = env_create(e);
         for (int i = 0; i < block.count; i++)
         {
@@ -766,9 +781,10 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_WHILE:
     {
+        WhileNode& while_node = n->get<WhileNode>();
         while (1)
         {
-            Value v = eval_expr(e, n->whilestmt.cond);
+            Value v = eval_expr(e, while_node.cond);
             int t = is_truthy(v);
             value_free(v);
             if (!t)
@@ -777,9 +793,9 @@ static Value exec_stmt(Env *e, AstNode *n)
             }
 
             Env *scope = env_create(e);
-            for (int i = 0; i < n->whilestmt.body.count; i++)
+            for (int i = 0; i < while_node.body.count; i++)
             {
-                exec_stmt(scope, n->whilestmt.body.items[i]);
+                exec_stmt(scope, while_node.body.items[i]);
                 if (return_exception.active || loop_exception.break_active)
                 {
                     break;
@@ -810,15 +826,16 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_FOR:
     {
+        ForNode& for_node = n->get<ForNode>();
         Env *scope = env_create(e); // Create scope for the loop variable (i)
 
         // 1. Run Initializer (once)
-        exec_stmt(scope, n->forstmt.init);
+        exec_stmt(scope, for_node.init);
 
         while (1)
         {
             // 2. Check Condition
-            Value c = eval_expr(scope, n->forstmt.cond);
+            Value c = eval_expr(scope, for_node.cond);
             int truthy = is_truthy(c);
             value_free(c);
 
@@ -828,9 +845,9 @@ static Value exec_stmt(Env *e, AstNode *n)
             // 3. Execute Body
             // We create a generic inner scope for the body to protect the iterator
             Env *inner_scope = env_create(scope);
-            for (int i = 0; i < n->forstmt.body.count; i++)
+            for (int i = 0; i < for_node.body.count; i++)
             {
-                exec_stmt(inner_scope, n->forstmt.body.items[i]);
+                exec_stmt(inner_scope, for_node.body.items[i]);
                 if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
                     break;
             }
@@ -850,7 +867,7 @@ static Value exec_stmt(Env *e, AstNode *n)
             }
 
             // 4. Run Increment
-            exec_stmt(scope, n->forstmt.incr);
+            exec_stmt(scope, for_node.incr);
         }
 
         env_free(scope); // Cleanup loop variable 'i'
@@ -858,14 +875,15 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_SWITCH:
     {
-        Value val = eval_expr(e, n->switchstmt.expr);
+        SwitchNode& switch_node = n->get<SwitchNode>();
+        Value val = eval_expr(e, switch_node.expr);
         int matched = 0;
 
         // Check all cases
-        for (int i = 0; i < n->switchstmt.cases.count; i++)
+        for (int i = 0; i < switch_node.cases.count; i++)
         {
-            AstNode *c = n->switchstmt.cases.items[i];
-            Value cval = eval_expr(e, c->casestmt.value);
+            AstNode *c = switch_node.cases.items[i];
+            Value cval = eval_expr(e, c->get<CaseNode>().value);
             int eq = 0;
 
             // Compare switch value with case value
@@ -892,9 +910,9 @@ static Value exec_stmt(Env *e, AstNode *n)
             {
                 matched = 1;
                 Env *scope = env_create(e);
-                for (int j = 0; j < c->casestmt.body.count; j++)
+                for (int j = 0; j < c->get<CaseNode>().body.count; j++)
                 {
-                    exec_stmt(scope, c->casestmt.body.items[j]);
+                    exec_stmt(scope, c->get<CaseNode>().body.items[j]);
                     if (return_exception.active || loop_exception.continue_active)
                         break;
                     if (loop_exception.break_active)
@@ -910,12 +928,12 @@ static Value exec_stmt(Env *e, AstNode *n)
         }
 
         // Execute default block if no match found
-        if (!matched && n->switchstmt.default_case.count > 0)
+        if (!matched && switch_node.default_case.count > 0)
         {
             Env *scope = env_create(e);
-            for (int j = 0; j < n->switchstmt.default_case.count; j++)
+            for (int j = 0; j < switch_node.default_case.count; j++)
             {
-                exec_stmt(scope, n->switchstmt.default_case.items[j]);
+                exec_stmt(scope, switch_node.default_case.items[j]);
                 if (return_exception.active || loop_exception.continue_active)
                     break;
                 if (loop_exception.break_active)
@@ -932,10 +950,11 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_BLOCK:
     {
+        BlockNode& block_node = n->get<BlockNode>();
         Env *scope = env_create(e);
-        for (int i = 0; i < n->block.items.count; i++)
+        for (int i = 0; i < block_node.items.count; i++)
         {
-            exec_stmt(scope, n->block.items.items[i]);
+            exec_stmt(scope, block_node.items.items[i]);
             if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
             {
                 break;
@@ -946,10 +965,11 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
     case NODE_GROUP:
     {
+        BlockNode& block_node = n->get<BlockNode>();
         // Execute statements in the CURRENT environment (e)
-        for (int i = 0; i < n->block.items.count; i++)
+        for (int i = 0; i < block_node.items.count; i++)
         {
-            exec_stmt(e, n->block.items.items[i]);
+            exec_stmt(e, block_node.items.items[i]);
 
             // Still need to check for control flow (return/break)
             if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
@@ -961,13 +981,17 @@ static Value exec_stmt(Env *e, AstNode *n)
     }
 
     case NODE_FUNC_DEF:
-        env_def_func(e, n->funcdef.name, n);
+    {
+        FuncDefNode& funcdef = n->get<FuncDefNode>();
+        env_def_func(e, funcdef.name.c_str(), n);
         return value_null();
+    }
 
     case NODE_RETURN:
     {
+        ReturnNode& ret_node = n->get<ReturnNode>();
         // 1. Calculate the return value first
-        Value v = eval_expr(e, n->ret.expr);
+        Value v = eval_expr(e, ret_node.expr);
         // 2. Set the exception flag to stop further execution
         return_exception.active = 1;
         return_exception.value = v;
@@ -1007,9 +1031,10 @@ Value interpret(AstNode *prog, Env *env)
     // Use the passed environment directly
     if (prog->kind == NODE_BLOCK)
     {
-        for (int i = 0; i < prog->block.items.count; i++)
+        BlockNode& block_node = prog->get<BlockNode>();
+        for (int i = 0; i < block_node.items.count; i++)
         {
-            exec_stmt(env, prog->block.items.items[i]);
+            exec_stmt(env, block_node.items.items[i]);
         }
     }
     else

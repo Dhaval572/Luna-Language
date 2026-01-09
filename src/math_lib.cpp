@@ -7,7 +7,7 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-#include "math_lib.h"
+#include <luna/math_lib.h>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

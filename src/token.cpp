@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2025 Bharath
 
-#include "token.h"
+#include <luna/token.h>
 
 // Converts a TokenType enum value into a readable string.
 // This is primarily used for debugging and generating syntax error messages.

@@ -4,16 +4,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/parser.h"
-#include "../include/ast.h"
-#include "../include/token.h"
-#include "../include/mystr.h"
-#include "../include/luna_error.h"
+#include <luna/parser.h>
+#include <luna/ast.h>
+#include <luna/token.h>
+#include <luna/mystr.h>
+#include <luna/luna_error.h>
 
 static void advance(Parser *p)
 {
-    if (p->had_error)
-        return; // Stop advancing if we have an error
+    if (p->had_error) return;
+         
     p->cur = lexer_next(&p->lx);
     p->has_cur = 1;
 }
@@ -63,7 +63,7 @@ void parser_init(Parser *p, const char *source)
 {
     p->lx = lexer_create(source);
     p->inside_function = 0;
-    p->had_error = 0; // Initialize error flag
+    p->had_error = 0; 
     advance(p);
 }
 
@@ -84,7 +84,7 @@ static AstNode *function_def(Parser *p);
 static AstNode *primary(Parser *p)
 {
     if (p->had_error)
-        return NULL; // Error check
+        return nullptr;; // Error check
     int line = p->cur.line;
 
     if (check(p, T_NUMBER))
@@ -162,7 +162,7 @@ static AstNode *primary(Parser *p)
     if (match(p, T_INPUT))
     {
         consume(p, T_LPAREN, "Expected '(' after input");
-        char *prompt = NULL;
+        char *prompt = nullptr;;
         if (!check(p, T_RPAREN))
         {
             if (check(p, T_STRING))
@@ -176,7 +176,7 @@ static AstNode *primary(Parser *p)
                                           "Expected string prompt for input",
                                           "Use input(\"prompt\") to get user input with a message");
                 p->had_error = 1;
-                return NULL;
+                return nullptr;;
             }
         }
         consume(p, T_RPAREN, "Expected ')' after input");
@@ -192,7 +192,7 @@ static AstNode *primary(Parser *p)
     error_report_with_context(ERR_SYNTAX, p->cur.line, p->cur.col, msg,
                               "Expected an expression (number, string, variable, or '(')");
     p->had_error = 1;
-    return NULL;
+    return nullptr;;
 }
 
 static AstNode *call_or_index(Parser *p)
@@ -222,7 +222,8 @@ static AstNode *call_or_index(Parser *p)
 
             if (expr && expr->kind == NODE_IDENT)
             {
-                char *name = my_strdup(expr->ident.name);
+                // FIXED LINE 225 - Using get<IdentNode>() instead of ->ident
+                char *name = my_strdup(expr->get<IdentNode>().name.c_str());
                 ast_free(expr);
                 expr = ast_call(name, args, line);
                 free(name);
@@ -234,7 +235,7 @@ static AstNode *call_or_index(Parser *p)
                                           "Function call requires a function name",
                                           "Only identifiers (function names) can be called, e.g., 'myFunction()'");
                 p->had_error = 1;
-                return NULL;
+                return nullptr;
             }
         }
         else if (match(p, T_LBRACKET))
@@ -251,18 +252,24 @@ static AstNode *call_or_index(Parser *p)
             // Handle ++
             if (expr && expr->kind == NODE_IDENT)
             {
-                char *name = my_strdup(expr->ident.name);
+                // FIXED: Using get<IdentNode>() instead of ->ident
+                char *name = my_strdup(expr->get<IdentNode>().name.c_str());
                 ast_free(expr);
                 expr = ast_inc(name, line);
                 free(name);
             }
             else
             {
-                error_report_with_context(ERR_SYNTAX, p->cur.line, p->cur.col,
-                                          "'++' can only be applied to variables",
-                                          "Use '++' only on variable names, e.g., 'count++'");
+                error_report_with_context
+                (
+                    ERR_SYNTAX, 
+                    p->cur.line, 
+                    p->cur.col,
+                    "'++' can only be applied to variables",
+                    "Use '++' only on variable names, e.g., 'count++'"
+                );
                 p->had_error = 1;
-                return NULL;
+                return nullptr;
             }
         }
         else if (match(p, T_DEC))
@@ -270,18 +277,24 @@ static AstNode *call_or_index(Parser *p)
             // Handle --
             if (expr && expr->kind == NODE_IDENT)
             {
-                char *name = my_strdup(expr->ident.name);
+                // FIXED: Using get<IdentNode>() instead of ->ident
+                char *name = my_strdup(expr->get<IdentNode>().name.c_str());
                 ast_free(expr);
                 expr = ast_dec(name, line);
                 free(name);
             }
             else
             {
-                error_report_with_context(ERR_SYNTAX, p->cur.line, p->cur.col,
-                                          "'--' can only be applied to variables",
-                                          "Use '--' only on variable names, e.g., 'count--'");
+                error_report_with_context
+                (
+                    ERR_SYNTAX, 
+                    p->cur.line, 
+                    p->cur.col,
+                    "'--' can only be applied to variables",
+                    "Use '--' only on variable names, e.g., 'count--'"
+                );
                 p->had_error = 1;
-                return NULL;
+                return nullptr;
             }
         }
         else
@@ -427,7 +440,7 @@ static AstNode *logical_or(Parser *p)
 static AstNode *expression(Parser *p)
 {
     if (p->had_error)
-        return NULL;
+        return nullptr;
     // Changed (was equality)
     return logical_or(p);
 }
@@ -435,7 +448,7 @@ static AstNode *expression(Parser *p)
 static AstNode *statement(Parser *p)
 {
     if (p->had_error)
-        return NULL; // Stop parsing statements if error
+        return nullptr; // Stop parsing statements if error
     int line = p->cur.line;
 
     if (match(p, T_FUNC))
@@ -446,7 +459,7 @@ static AstNode *statement(Parser *p)
     if (match(p, T_LET))
     {
         // 1. Collect all variable names
-        char **names = NULL;
+        char **names = nullptr;
         int name_count = 0;
 
         do
@@ -461,7 +474,7 @@ static AstNode *statement(Parser *p)
                 for (int i = 0; i < name_count; i++)
                     free(names[i]);
                 free(names);
-                return NULL;
+                return nullptr;
             }
 
             names = (char**)realloc(names, sizeof(char *) * (name_count + 1));
@@ -471,7 +484,7 @@ static AstNode *statement(Parser *p)
         } while (match(p, T_COMMA));
 
         // 2. Check for optional assignment
-        AstNode **values = NULL;
+        AstNode **values = nullptr;
         int val_count = 0;
 
         if (match(p, T_EQ))
@@ -495,12 +508,17 @@ static AstNode *statement(Parser *p)
 
             // Cleanup
             for (int i = 0; i < name_count; i++)
+            {
                 free(names[i]);
+            }
             free(names);
+
             for (int i = 0; i < val_count; i++)
+            {
                 ast_free(values[i]);
+            }
             free(values);
-            return NULL;
+            return nullptr;
         }
 
         // 4. Generate the AST
@@ -510,7 +528,7 @@ static AstNode *statement(Parser *p)
         for (int i = 0; i < name_count; i++)
         {
             // Use the corresponding value, or NULL if simply declaring
-            AstNode *val = (val_count > 0) ? values[i] : NULL;
+            AstNode *val = (val_count > 0) ? values[i] : nullptr;
 
             AstNode *node = ast_let(names[i], val, line);
             nodelist_push(&lets, node);
@@ -520,7 +538,9 @@ static AstNode *statement(Parser *p)
 
         free(names);
         if (values)
+        {
             free(values);
+        }
 
         // Return single node or GROUP
         if (lets.count == 1)
@@ -547,7 +567,9 @@ static AstNode *statement(Parser *p)
             {
                 AstNode *arg = expression(p);
                 if (arg)
+                {
                     nodelist_push(&args, arg);
+                }
             } while (match(p, T_COMMA));
         }
         consume(p, T_RPAREN, "Expected ')' after print args");
@@ -608,7 +630,9 @@ static AstNode *statement(Parser *p)
                 NodeList e_else;
                 nodelist_init(&e_else);
                 if (econd)
+                {
                     nodelist_push(&else_b, ast_if(econd, e_then, e_else, line));
+                }
             }
             else
             {
@@ -617,8 +641,11 @@ static AstNode *statement(Parser *p)
             }
         }
         if (cond && !p->had_error)
+        {
             return ast_if(cond, then_b, else_b, line);
-        return NULL;
+        }
+
+        return nullptr;
     }
 
     if (match(p, T_WHILE))
@@ -635,8 +662,11 @@ static AstNode *statement(Parser *p)
         consume(p, T_LBRACE, "Expected '{'");
         block(p, &body);
         if (cond && !p->had_error)
+        {
             return ast_while(cond, body, line);
-        return NULL;
+        }
+            
+        return nullptr;
     }
 
     if (match(p, T_FOR))
@@ -663,10 +693,13 @@ static AstNode *statement(Parser *p)
         consume(p, T_LBRACE, "Expected '{' for loop body");
         block(p, &body);
 
-        AstNode *n = NULL;
+        AstNode *n = nullptr;
         // Only return if no errors occurred
         if (!p->had_error)
+        {
             n = ast_for(init, cond, incr, body, line);
+        }
+            
         return n;
     }
 
@@ -684,8 +717,8 @@ static AstNode *statement(Parser *p)
 
         while (!check(p, T_RBRACE) && !check(p, T_EOF))
         {
-            if (p->had_error)
-                break;
+            if (p->had_error) break;
+                
             int case_line = p->cur.line;
 
             if (match(p, T_CASE))
@@ -698,41 +731,59 @@ static AstNode *statement(Parser *p)
                 while (!check(p, T_CASE) && !check(p, T_DEFAULT) && !check(p, T_RBRACE))
                 {
                     if (match(p, T_NEWLINE))
+                    {
                         continue;
+                    }
+                        
                     AstNode *stmt = statement(p);
                     if (stmt)
+                    {
                         nodelist_push(&cbody, stmt);
+                    }
+                        
                 }
                 if (val)
+                {
                     nodelist_push(&cases, ast_case(val, cbody, case_line));
+                }
             }
             else if (match(p, T_DEFAULT))
             {
                 consume(p, T_COLON, "Expected ':' after default");
                 while (!check(p, T_CASE) && !check(p, T_DEFAULT) && !check(p, T_RBRACE))
                 {
-                    if (match(p, T_NEWLINE))
-                        continue;
+                    if (match(p, T_NEWLINE)) continue;
+                        
                     AstNode *stmt = statement(p);
                     if (stmt)
+                    {
                         nodelist_push(&def_case, stmt);
+                    }
                 }
             }
             else
             {
-                if (match(p, T_NEWLINE))
-                    continue;
-                error_report_with_context(ERR_SYNTAX, p->cur.line, p->cur.col,
-                                          "Expected 'case' or 'default' inside switch",
-                                          "Switch blocks must contain 'case value:' or 'default:' statements");
+                if (match(p, T_NEWLINE)) continue;
+                    
+                error_report_with_context
+                (
+                    ERR_SYNTAX, 
+                    p->cur.line, 
+                    p->cur.col,
+                    "Expected 'case' or 'default' inside switch",
+                    "Switch blocks must contain 'case value:' or 'default:' statements"
+                );
                 p->had_error = 1;
-                return NULL;
+                return nullptr;
             }
         }
         consume(p, T_RBRACE, "Expected '}' ending switch");
         if (expr && !p->had_error)
+        {
             return ast_switch(expr, cases, def_case, line);
-        return NULL;
+        }
+            
+        return nullptr;
     }
 
     // Assignment Handling
@@ -742,27 +793,34 @@ static AstNode *statement(Parser *p)
         // Case 1: Variable Assignment (x = 5)
         if (expr && expr->kind == NODE_IDENT)
         {
-            char *name = my_strdup(expr->ident.name);
+            // FIXED: Using get<IdentNode>() instead of ->ident
+            char *name = my_strdup(expr->get<IdentNode>().name.c_str());
             ast_free(expr);
             AstNode *val = expression(p);
-            AstNode *n = NULL;
+            AstNode *n = nullptr;
             if (val && !p->had_error)
+            {
                 n = ast_assign(name, val, line);
+            }
+                
             free(name);
             return n;
         }
         // Case 2: List Index Assignment (x[0] = 5)
         else if (expr && expr->kind == NODE_INDEX)
         {
-            AstNode *target = expr->index.target;
-            AstNode *index = expr->index.index;
+            // FIXED: Using get<IndexNode>() instead of ->index
+            IndexNode& index_node = expr->get<IndexNode>();
+            AstNode *target = index_node.target;
+            AstNode *index = index_node.index;
 
-            expr->index.target = NULL;
-            expr->index.index = NULL;
+            // Clear the pointers in the node before freeing it
+            index_node.target = nullptr;;
+            index_node.index = nullptr;;
             ast_free(expr);
 
             AstNode *val = expression(p);
-            AstNode *n = NULL;
+            AstNode *n = nullptr;
             if (val && !p->had_error)
             {
                 n = ast_assign_index(target, index, val, line);
@@ -780,9 +838,9 @@ static AstNode *statement(Parser *p)
                                       "Invalid assignment target",
                                       "You can only assign to variables (e.g., 'x = 5') or list indices (e.g., 'arr[0] = 5')");
             p->had_error = 1;
-            if (expr)
-                ast_free(expr);
-            return NULL;
+            if (expr) ast_free(expr);
+                
+            return nullptr;
         }
     }
     return expr;
@@ -792,37 +850,44 @@ static void block(Parser *p, NodeList *list)
 {
     while (!check(p, T_RBRACE) && !check(p, T_EOF))
     {
-        if (p->had_error)
-            return;
-        if (match(p, T_NEWLINE))
-            continue;
+        if (p->had_error) return;
+            
+        if (match(p, T_NEWLINE)) continue;
 
         AstNode *stmt = statement(p);
         if (stmt)
+        {
             nodelist_push(list, stmt);
+        }
+            
     }
     consume(p, T_RBRACE, "Expected '}'");
 }
 
 static AstNode *function_def(Parser *p)
 {
-    if (p->had_error)
-        return NULL;
+    if (p->had_error) return nullptr;
+        
     int line = p->cur.line;
 
     if (!check(p, T_IDENT))
     {
-        error_report_with_context(ERR_SYNTAX, p->cur.line, p->cur.col,
-                                  "Expected function name after 'func'",
-                                  "Use 'func functionName(params) { ... }' to define a function");
+        error_report_with_context
+        (
+            ERR_SYNTAX, 
+            p->cur.line, 
+            p->cur.col,
+            "Expected function name after 'func'",
+            "Use 'func functionName(params) { ... }' to define a function"
+        );
         p->had_error = 1;
-        return NULL;
+        return nullptr;
     }
     char *name = my_strdup(p->cur.lexeme);
     advance(p);
 
     consume(p, T_LPAREN, "Expected '('");
-    char **params = NULL;
+    char **params = nullptr;
     int count = 0;
     if (!check(p, T_RPAREN))
     {
@@ -830,14 +895,19 @@ static AstNode *function_def(Parser *p)
         {
             if (!check(p, T_IDENT))
             {
-                error_report_with_context(ERR_SYNTAX, p->cur.line, p->cur.col,
-                                          "Expected parameter name",
-                                          "Function parameters must be valid identifiers, e.g., 'func add(a, b)'");
+                error_report_with_context
+                (
+                    ERR_SYNTAX, 
+                    p->cur.line, 
+                    p->cur.col,
+                    "Expected parameter name",
+                    "Function parameters must be valid identifiers, e.g., 'func add(a, b)'"
+                );
                 p->had_error = 1;
                 free(name);
-                if (params)
-                    free(params); // Better than crashing
-                return NULL;
+                if (params) free(params);
+    
+                return nullptr;
             }
             params = (char**)realloc(params, sizeof(char *) * (count + 1));
             params[count++] = my_strdup(p->cur.lexeme);
@@ -853,13 +923,18 @@ static AstNode *function_def(Parser *p)
     block(p, &body);
     p->inside_function = 0;
 
-    AstNode *n = NULL;
+    AstNode *n = nullptr;
     if (!p->had_error)
+    {
         n = ast_funcdef(name, params, count, body, line);
-
+    }
+        
     free(name);
     for (int i = 0; i < count; i++)
+    {
         free(params[i]);
+    }   
+        
     free(params);
     return n;
 }
@@ -871,13 +946,11 @@ AstNode *parser_parse_program(Parser *p)
     int line = p->cur.line;
     while (!check(p, T_EOF))
     {
-        if (p->had_error)
-            break;
+        if (p->had_error) break;
 
-        if (match(p, T_NEWLINE))
-            continue;
+        if (match(p, T_NEWLINE)) continue;
 
-        AstNode *stmt = NULL;
+        AstNode *stmt = nullptr;
         if (match(p, T_FUNC))
         {
             stmt = function_def(p);
@@ -888,14 +961,16 @@ AstNode *parser_parse_program(Parser *p)
         }
 
         if (stmt)
+        {
             nodelist_push(&items, stmt);
+        }   
     }
 
     // If there was an error, verify we don't return a partial broken tree
     if (p->had_error)
     {
         nodelist_free(&items);
-        return NULL;
+        return nullptr;
     }
     return ast_block(items, line);
 }

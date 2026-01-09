@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/value.h"
-#include "../include/mystr.h"
+#include <luna/value.h>
+#include <luna/mystr.h>
 
 // Constructor for integer values
 Value value_int(long long x)

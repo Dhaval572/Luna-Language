@@ -4,9 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "../include/env.h"
-#include "../include/mystr.h"
-#include "../include/luna_error.h"
+#include <luna/env.h>
+#include <luna/mystr.h>
+#include <luna/luna_error.h>
 
 #define MAX_VARS 256
 #define MAX_FUNCS 64

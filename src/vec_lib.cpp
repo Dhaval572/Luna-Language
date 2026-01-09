@@ -3,8 +3,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/value.h"
-#include "../include/vec_lib.h"
+#include <luna/value.h>
+#include <luna/vec_lib.h>
 
 // Define the ASM function pointer type
 typedef void (*VecOp)

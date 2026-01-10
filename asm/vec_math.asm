@@ -9,7 +9,6 @@ global vec_div_asm
 
 section .text
 
-
 ; MACRO: IMPL_VEC_OP
 ; Generates a complete function for a specific SIMD instruction.
 ; %1 = Function Name (e.g., vec_add_asm)

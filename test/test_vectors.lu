@@ -120,6 +120,6 @@ assert(BenchSub[0] == -1)          # 1 - 2 = -1
 assert(BenchMul[size-1] == 100000) # 50000 * 2 = 100000
 assert(BenchDiv[0] == 0.5)         # 1 / 2 = 0.5
 
-print("  ✓ Benchmark passed")
+print("Benchmark passed")
 
 print("\n=== All Vector Tests Passed! ===")

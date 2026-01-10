@@ -8,8 +8,8 @@
 #include <luna/mystr.h>
 #include <luna/luna_error.h>
 
-#define MAX_VARS 256
-#define MAX_FUNCS 64
+constexpr int MAX_VARS  = 256;
+constexpr int MAX_FUNCS =  64;
 
 // Structure to hold a variable name and its current value
 typedef struct
@@ -128,10 +128,15 @@ void env_assign(Env *e, const char *name, Value val)
         }
         cur = cur->parent;
     }
-    const char *suggestion = suggest_for_undefined_var(name);
-    error_report(ERR_NAME, 0, 0,
-                 suggestion ? suggestion : "Variable is not defined",
-                 "Declare variables with 'let' before assigning to them");
+    std::string suggestion = suggest_for_undefined_var(name);
+    error_report
+    (
+        ERR_NAME, 
+        0, 
+        0,
+        suggestion.empty() ? "Variable is not defined" : suggestion.data(),
+        "Declare variables with 'let' before assigning to them"
+    );
 }
 
 // Defines a function in the current scope

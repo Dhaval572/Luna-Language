@@ -129,11 +129,8 @@ struct FuncDefNode
 
 struct ReturnNode { AstNode *expr; };
 
-/* =========================
-   Variant
-   ========================= */
-
-using AstPayload = std::variant<
+using AstPayload = std::variant
+<
     NumberNode,
     FloatNode,
     StringNode,

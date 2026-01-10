@@ -57,4 +57,4 @@ const char *suggest_for_unexpected_token
     const char *found, 
     const char *expected
 );
-const char *suggest_for_undefined_var(const char *var_name);
+std::string suggest_for_undefined_var(std::string_view var_name);

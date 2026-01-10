@@ -3,13 +3,13 @@
 
 #pragma once
 #include <stdio.h>
-
 typedef struct Value Value; // Forward decl
 
 // Typedef for Native Functions
 typedef Value (*NativeFunc)(int argc, Value *argv);
 
-typedef enum {
+typedef enum 
+{
     VAL_INT,
     VAL_FLOAT,   
     VAL_STRING,

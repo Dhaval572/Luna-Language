@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <format>
 #include <luna/value.h>
 #include <luna/mystr.h>
 
@@ -64,7 +65,7 @@ Value value_list(void)
 {
     Value v;
     v.type = VAL_LIST;
-    v.list.items = NULL;
+    v.list.items = nullptr;
     v.list.count = 0;
     v.list.capacity = 0;
     return v;
@@ -176,22 +177,35 @@ char *value_to_string(Value v)
     case VAL_INT:
         snprintf(buf, 128, "%lld", v.i); // Use lld for long long
         return my_strdup(buf);
+
     case VAL_FLOAT:
         snprintf(buf, 128, "%.6g", v.f);
         return my_strdup(buf);
+
     case VAL_BOOL:
         return my_strdup(v.b ? "true" : "false");
+
     case VAL_CHAR:
         snprintf(buf, 128, "%c", v.c);
         return my_strdup(buf);
+
     case VAL_NATIVE:
         return my_strdup("<native function>");
+
     case VAL_FILE:
+    {
         if (v.file)
+        {
             return my_strdup("<file handle>");
+        }
         else
+        {
             return my_strdup("<closed file>");
+        }
+    }
+
     case VAL_STRING:
+    {
         if (v.s)
         {
             return my_strdup(v.s);
@@ -200,6 +214,8 @@ char *value_to_string(Value v)
         {
             return my_strdup("");
         }
+    }
+
     case VAL_LIST:
     {
         char *res = my_strdup("[");
@@ -207,7 +223,7 @@ char *value_to_string(Value v)
         {
             char *vs = value_to_string(v.list.items[i]);
             size_t new_len = strlen(res) + strlen(vs) + 3;
-            res = (char*)realloc(res, new_len);
+            res = static_cast<char*>(realloc(res, new_len));
             strcat(res, vs);
             if (i < v.list.count - 1)
             {
@@ -215,14 +231,14 @@ char *value_to_string(Value v)
             }
             free(vs);
         }
-        res = (char*)realloc(res, strlen(res) + 2);
+        res = static_cast<char*>(realloc(res, strlen(res) + 2));
         strcat(res, "]");
         return res;
     }
     default:
         return my_strdup("null");
     }
-}
+}   
 
 // Appends a value to a list, resizing capacity if needed
 void value_list_append(Value *list, Value v)

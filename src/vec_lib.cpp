@@ -43,9 +43,13 @@ void vec_div_asm(long long count, double *a, double *b, double *out)
     for (long long i = 0; i < count; i++)
     {
         if (b[i] != 0.0)
+        {
             out[i] = a[i] / b[i];
+        }
         else
-            out[i] = 0.0; // Handle division by zero
+        {
+            out[i] = 0.0;
+        } 
     }
 }
 #else
@@ -60,9 +64,15 @@ extern void vec_div_asm(long long, double *, double *, double *);
 static double get_val(Value v)
 {
     if (v.type == VAL_INT)
+    {
         return (double)v.i;
+    }
+
     if (v.type == VAL_FLOAT)
+    {
         return v.f;
+    }
+
     return 0.0;
 }
 
@@ -77,9 +87,13 @@ static Value vec_op_direct(Value list_a, Value list_b, VecOp op)
         return value_null();
     }
 
-    int count = list_a.list.count < list_b.list.count ? list_a.list.count : list_b.list.count;
+    int count = list_a.list.count < list_b.list.count ? 
+                list_a.list.count : list_b.list.count;
+
     if (count == 0)
+    {
         return value_list();
+    }
 
     // Allocate & Pack
     double *raw_a = (double*)malloc(sizeof(double) * count);
@@ -129,7 +143,13 @@ Value vec_div_values(Value a, Value b)
 
 // NATIVE WRAPPERS (Callable from Luna Scripts)\
 
-static Value vec_generic_wrapper(int argc, Value *argv, Value (*func)(Value, Value), const char *name)
+static Value vec_generic_wrapper
+(
+    int argc, 
+    Value *argv, 
+    Value (*func)(Value, Value), 
+    const char *name
+)
 {
     if (argc != 2)
     {

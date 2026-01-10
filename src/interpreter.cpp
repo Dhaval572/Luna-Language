@@ -6,6 +6,7 @@
 #include <string.h>
 #include <limits.h>
 #include <math.h> // Added for fabs()
+#include <span>
 #include <luna/interpreter.h>
 #include <luna/ast.h>
 #include <luna/value.h>
@@ -14,8 +15,7 @@
 #include <luna/library.h>
 #include <luna/luna_error.h>
 #include <luna/vec_lib.h>
-
-#define EPSILON 0.000001 // Tolerance for float comparison
+constexpr float EPSILON = static_cast<float>(0.000001);
 
 // Flags to handle 'return' statements across recursive calls
 typedef struct
@@ -78,7 +78,9 @@ static Value *get_mutable_value(Env *e, AstNode *n)
         // Recursively get the parent list
         Value *list = get_mutable_value(e, n->get<IndexNode>().target);
         if (!list || list->type != VAL_LIST)
+        {
             return nullptr;
+        }
 
         // Evaluate index
          Value idx = eval_expr(e, n->get<IndexNode>().index);
@@ -92,10 +94,23 @@ static Value *get_mutable_value(Env *e, AstNode *n)
         if (idx.i < 0 || idx.i >= list->list.count)
         {
             char msg[128];
-            snprintf(msg, sizeof(msg), "Index %lld is out of bounds for list of length %d", idx.i, list->list.count);
+            snprintf
+            (
+                msg, 
+                sizeof(msg), 
+                "Index %lld is out of bounds for list of length %d", 
+                idx.i, 
+                list->list.count
+            );
             // Updated to use n->line from the AST node
-            error_report(ERR_INDEX, n->line, 0, msg,
-                         "Check that your index is between 0 and len(list)-1");
+            error_report
+            (
+                ERR_INDEX, 
+                n->line, 
+                0, 
+                msg,
+                "Check that your index is between 0 and len(list)-1"
+            );
             value_free(idx);
             return nullptr;
         }
@@ -124,7 +139,9 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
             return value_int(l.i * r.i);
         case OP_DIV:
             if (r.i == 0)
+            {
                 return value_int(0);
+            }
 
             // Return float for division to allow decimals
             return value_float(static_cast<double>(l.i) / static_cast<double>(r.i));
@@ -148,10 +165,20 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
     }
 
     // 2. Handle Mixed/Float Operations
-    if ((l.type == VAL_INT || l.type == VAL_FLOAT) && (r.type == VAL_INT || r.type == VAL_FLOAT))
+    if 
+    (
+        (
+            l.type == VAL_INT    || 
+            l.type == VAL_FLOAT
+        ) && 
+        (
+            r.type == VAL_INT    || 
+            r.type == VAL_FLOAT
+        )
+    )
     {
-        double dl = (l.type == VAL_INT) ? (double)l.i : l.f;
-        double dr = (r.type == VAL_INT) ? (double)r.i : r.f;
+        double dl = (l.type == VAL_INT) ? static_cast<double>(l.i) : l.f;
+        double dr = (r.type == VAL_INT) ? static_cast<double>(r.i) : r.f;
         int is_res_float = 1;
 
         double res = 0;
@@ -171,7 +198,7 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
             res = dr == 0 ? 0 : dl / dr;
             break;
         case OP_MOD:
-            res = fmod(dl, dr); // Use fmod to avoid int64 -> double conversion warning
+            res = fmod(dl, dr); 
             is_res_float = 0;
             break;
 
@@ -198,7 +225,7 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
         }
         else
         {
-            return value_int((long long)res);
+            return value_int(static_cast<long long>(res));
         }
     }
 
@@ -206,38 +233,59 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
     if (l.type == VAL_STRING && r.type == VAL_STRING)
     {
         if (op == OP_EQ)
+        {
             return value_bool(strcmp(l.s, r.s) == 0);
+        }   
         if (op == OP_NEQ)
+        {
             return value_bool(strcmp(l.s, r.s) != 0);
+        }
     }
 
     // Handle Boolean and Null Equality
     if (op == OP_EQ)
     {
         if (l.type == VAL_BOOL && r.type == VAL_BOOL)
+        {
             return value_bool(l.b == r.b);
+        }
         if (l.type == VAL_NULL && r.type == VAL_NULL)
+        {
             return value_bool(1);
+        }
         if (l.type == VAL_NULL || r.type == VAL_NULL)
+        {
             return value_bool(0);
+        }
     }
     if (op == OP_NEQ)
     {
         if (l.type == VAL_BOOL && r.type == VAL_BOOL)
+        {
             return value_bool(l.b != r.b);
+        }
         if (l.type == VAL_NULL && r.type == VAL_NULL)
+        {
             return value_bool(0);
+        }   
         if (l.type == VAL_NULL || r.type == VAL_NULL)
+        {
             return value_bool(1);
+        }   
     }
 
     // Handle Char Equality
     if (l.type == VAL_CHAR && r.type == VAL_CHAR)
     {
         if (op == OP_EQ)
+        {
             return value_bool(l.c == r.c);
+        }
+
         if (op == OP_NEQ)
+        {
             return value_bool(l.c != r.c);
+        }
     }
 
     // Handle String Concatenation
@@ -245,7 +293,7 @@ static Value eval_binop(BinOpKind op, Value l, Value r)
     {
         char *sl = value_to_string(l);
         char *sr = value_to_string(r);
-        char *comb = (char*)malloc(strlen(sl) + strlen(sr) + 1);
+        char *comb = static_cast<char*>(malloc(strlen(sl) + strlen(sr) + 1));
         strcpy(comb, sl);
         strcat(comb, sr);
         free(sl);
@@ -284,15 +332,25 @@ static Value eval_expr(Env *e, AstNode *n)
     switch (n->kind)
     {
     case NODE_NUMBER:
+    {
         return value_int(n->get<NumberNode>().value);  
+    }
     case NODE_FLOAT:
+    {
         return value_float(n->get<FloatNode>().value); 
+    }
     case NODE_STRING:
+    {
         return value_string(n->get<StringNode>().text.c_str());
+    }
     case NODE_CHAR:
+    {
         return value_char(n->get<CharNode>().value);
+    }
     case NODE_BOOL:
-    return value_bool(n->get<BoolNode>().value);  
+    {
+        return value_bool(n->get<BoolNode>().value);      
+    }
 
     // Recursively evaluate items in a list literal
     case NODE_LIST:
@@ -458,9 +516,14 @@ static Value eval_expr(Env *e, AstNode *n)
             else
             {
                 // Use node line number
-                error_report(ERR_ARGUMENT, n->line, 0,
-                             "append() expects a list variable as the first argument",
-                             "Use append(myList, value) where myList is a list variable");
+                error_report
+                (
+                    ERR_ARGUMENT, 
+                    n->line, 
+                    0,
+                    "append() expects a list variable as the first argument",
+                    "Use append(myList, value) where myList is a list variable"
+                );
             }
 
             value_free(item_val);
@@ -523,15 +586,25 @@ static Value eval_expr(Env *e, AstNode *n)
                 Value v = eval_expr(e, call_node.args.items[0]);
                 long long res = 0;
                 if (v.type == VAL_STRING)
+                {
                     res = atoll(v.s);
+                }
                 else if (v.type == VAL_FLOAT)
+                {
                     res = (long long)v.f;
+                }
                 else if (v.type == VAL_INT)
+                {
                     res = v.i;
+                }
                 else if (v.type == VAL_BOOL)
+                {
                     res = v.b;
+                }
                 else if (v.type == VAL_CHAR)
+                {
                     res = (long long)v.c;
+                }
                 value_free(v);
                 return value_int(res);
             }
@@ -544,13 +617,21 @@ static Value eval_expr(Env *e, AstNode *n)
                 Value v = eval_expr(e, call_node.args.items[0]);
                 double res = 0.0;
                 if (v.type == VAL_STRING)
+                {
                     res = atof(v.s);
+                }
                 else if (v.type == VAL_INT)
-                    res = (double)v.i;
+                {
+                    res = static_cast<double>(v.i);
+                }
                 else if (v.type == VAL_FLOAT)
+                {
                     res = v.f;
+                }
                 else if (v.type == VAL_BOOL)
+                {
                     res = v.b ? 1.0 : 0.0;
+                }
                 value_free(v);
                 return value_float(res);
             }
@@ -567,7 +648,9 @@ static Value eval_expr(Env *e, AstNode *n)
             FuncDefNode& funcdef = fn->get<FuncDefNode>();
             for (size_t i = 0; i < funcdef.params.size(); i++)
             {
-                Value v = (i < call_node.args.count) ? eval_expr(e, call_node.args.items[i]) : value_null();
+                Value v = (i < call_node.args.count) ? 
+                eval_expr(e, call_node.args.items[i]) : value_null();
+
                 env_def(scope, funcdef.params[i].c_str(), v);
                 value_free(v);
             }
@@ -576,8 +659,9 @@ static Value eval_expr(Env *e, AstNode *n)
             for (int i = 0; i < funcdef.body.count; i++)
             {
                 exec_stmt(scope, funcdef.body.items[i]);
-                if (return_exception.active)
-                    break;
+                {
+                    if (return_exception.active) break;
+                }
             }
 
             // Handle return value
@@ -597,16 +681,18 @@ static Value eval_expr(Env *e, AstNode *n)
         {
             // Evaluate Arguments first
             int argc = call_node.args.count;
-            Value *argv = (Value*)malloc(sizeof(Value) * argc);
+            Value *argv = static_cast<Value*>(malloc(sizeof(Value) * argc));
             for (int i = 0; i < argc; i++)
             {
                 // Fixed it, now it Passes list identifiers by reference to allow in-place modification
                 if (call_node.args.items[i]->kind == NODE_IDENT)
                 {
-                    Value *env_ref = env_get(e, call_node.args.items[i]->get<IdentNode>().name.c_str());
+                    Value *env_ref = 
+                    env_get(e, call_node.args.items[i]->get<IdentNode>().name.c_str());
+
                     if (env_ref && env_ref->type == VAL_LIST)
                     {
-                        argv[i] = *env_ref; // Pass direct reference
+                        argv[i] = *env_ref; 
                     }
                     else
                     {
@@ -673,346 +759,418 @@ static Value exec_stmt(Env *e, AstNode *n)
 
     switch (n->kind)
     {
-    case NODE_LET:
-    {
-        LetNode& let_node = n->get<LetNode>();
-        Value v = eval_expr(e, let_node.expr);
-        env_def(e, let_node.name.c_str(), v);
-        value_free(v);
-        return value_null();
-    }
-    case NODE_ASSIGN:
-    {
-        AssignNode& assign_node = n->get<AssignNode>();
-        Value v = eval_expr(e, assign_node.expr);
-        env_assign(e, assign_node.name.c_str(), v);
-        value_free(v);
-        return value_null();
-    }
-    case NODE_ASSIGN_INDEX:
-    {
-        AssignIndexNode& assign_idx = n->get<AssignIndexNode>();
-        Value val = eval_expr(e, assign_idx.value);
-
-        // Get pointer to the actual list item in the environment
-        Value *target = get_mutable_value(e, assign_idx.list);
-
-        // Verify target is actually a list
-        if (!target || target->type != VAL_LIST)
+        case NODE_LET:
         {
-            // Use node line number
-            error_report(ERR_TYPE, n->line, 0,
-                         "Cannot assign to non-list target - target must be a list",
-                         "Use list indices only on list variables, e.g., myList[0] = value");
-            value_free(val);
-            return value_null();
-        }
-
-        // Evaluate the index
-        Value idx = eval_expr(e, assign_idx.index);
-        if (idx.type != VAL_INT)
-        {
-            // Use node line number
-            error_report(ERR_TYPE, n->line, 0,
-                         "List index must be an integer",
-                         "Use integer values for list indices, e.g., myList[0] or myList[i]");
-            value_free(val);
-            value_free(idx);
-            return value_null();
-        }
-
-        // Bounds Check
-        if (idx.i < 0 || idx.i >= target->list.count)
-        {
-            char msg[128];
-            snprintf(msg, sizeof(msg), "Index %lld is out of bounds for list of length %d",
-                     idx.i, target->list.count);
-            // Use node line number
-            error_report(ERR_INDEX, n->line, 0, msg,
-                         "Ensure your index is between 0 and len(list)-1");
-            value_free(val);
-            value_free(idx);
-            return value_null();
-        }
-
-        // Assign to the specific slot
-        Value *slot = &target->list.items[idx.i];
-        value_free(*slot);       // Free the old value in this slot
-        *slot = value_copy(val); // Assign the new value
-
-        value_free(val);
-        value_free(idx);
-        return value_null();
-    }
-    case NODE_PRINT:
-    {
-        PrintNode& print_node = n->get<PrintNode>();
-        for (int i = 0; i < print_node.args.count; i++)
-        {
-            Value v = eval_expr(e, print_node.args.items[i]);
-            char *s = value_to_string(v);
-            printf("%s ", s);
-            free(s);
+            LetNode& let_node = n->get<LetNode>();
+            Value v = eval_expr(e, let_node.expr);
+            env_def(e, let_node.name.c_str(), v);
             value_free(v);
+            return value_null();
         }
-        printf("\n");
-        return value_null();
-    }
-    case NODE_IF:
-    {
-        IfNode& if_node = n->get<IfNode>();
-        Value v = eval_expr(e, if_node.cond);
-        int t = is_truthy(v);
-        value_free(v);
+        case NODE_ASSIGN:
+        {
+            AssignNode& assign_node = n->get<AssignNode>();
+            Value v = eval_expr(e, assign_node.expr);
+            env_assign(e, assign_node.name.c_str(), v);
+            value_free(v);
+            return value_null();
+        }
+        case NODE_ASSIGN_INDEX:
+        {
+            AssignIndexNode& assign_idx = n->get<AssignIndexNode>();
+            Value val = eval_expr(e, assign_idx.value);
 
-        NodeList block = t ? if_node.then_block : if_node.else_block;
-        Env *scope = env_create(e);
-        for (int i = 0; i < block.count; i++)
-        {
-            exec_stmt(scope, block.items[i]);
-            // Stop if a control flow event occurred
-            if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
+            // Get pointer to the actual list item in the environment
+            Value *target = get_mutable_value(e, assign_idx.list);
+
+            // Verify target is actually a list
+            if (!target || target->type != VAL_LIST)
             {
-                break;
+                // Use node line number
+                error_report
+                (
+                    ERR_TYPE, 
+                    n->line, 
+                    0,
+                    "Cannot assign to non-list target - target must be a list",
+                    "Use list indices only on list variables, e.g., myList[0] = value"
+                );
+                value_free(val);
+                return value_null();
             }
+
+            // Evaluate the index
+            Value idx = eval_expr(e, assign_idx.index);
+            if (idx.type != VAL_INT)
+            {
+                // Use node line number
+                error_report
+                (
+                    ERR_TYPE, 
+                    n->line, 
+                    0,
+                    "List index must be an integer",
+                    "Use integer values for list indices, e.g., myList[0] or myList[i]"
+                );
+                value_free(val);
+                value_free(idx);
+                return value_null();
+            }
+
+            // Bounds Check
+            if (idx.i < 0 || idx.i >= target->list.count)
+            {
+                char msg[128];
+                snprintf
+                (
+                    msg, 
+                    sizeof(msg), 
+                    "Index %lld is out of bounds for list of length %d",
+                    idx.i, target->list.count
+                );
+                // Use node line number
+                error_report
+                (
+                    ERR_INDEX, 
+                    n->line, 
+                    0, 
+                    msg,
+                    "Ensure your index is between 0 and len(list)-1"
+                );
+                value_free(val);
+                value_free(idx);
+                return value_null();
+            }
+
+            // Assign to the specific slot
+            Value *slot = &target->list.items[idx.i];
+            value_free(*slot);       // Free the old value in this slot
+            *slot = value_copy(val); // Assign the new value
+
+            value_free(val);
+            value_free(idx);
+            return value_null();
         }
-        env_free(scope);
-        return value_null();
-    }
-    case NODE_WHILE:
-    {
-        WhileNode& while_node = n->get<WhileNode>();
-        while (1)
+        case NODE_PRINT:
         {
-            Value v = eval_expr(e, while_node.cond);
+            PrintNode& print_node = n->get<PrintNode>();
+            for (int i = 0; i < print_node.args.count; i++)
+            {
+                Value v = eval_expr(e, print_node.args.items[i]);
+                char *s = value_to_string(v);
+                printf("%s ", s);
+                free(s);
+                value_free(v);
+            }
+            printf("\n");
+            return value_null();
+        }
+        case NODE_IF:
+        {
+            IfNode& if_node = n->get<IfNode>();
+            Value v = eval_expr(e, if_node.cond);
             int t = is_truthy(v);
             value_free(v);
-            if (!t)
-            {
-                break;
-            }
 
+            NodeList block = t ? if_node.then_block : if_node.else_block;
             Env *scope = env_create(e);
-            for (int i = 0; i < while_node.body.count; i++)
+            for (int i = 0; i < block.count; i++)
             {
-                exec_stmt(scope, while_node.body.items[i]);
-                if (return_exception.active || loop_exception.break_active)
-                {
-                    break;
-                }
-                if (loop_exception.continue_active)
+                exec_stmt(scope, block.items[i]);
+                // Stop if a control flow event occurred
+                if 
+                (
+                    return_exception.active     || 
+                    loop_exception.break_active ||
+                    loop_exception.continue_active
+                )
                 {
                     break;
                 }
             }
             env_free(scope);
-
-            if (return_exception.active)
-            {
-                break;
-            }
-            if (loop_exception.break_active)
-            {
-                loop_exception.break_active = 0;
-                break;
-            }
-            if (loop_exception.continue_active)
-            {
-                loop_exception.continue_active = 0;
-                continue;
-            }
+            return value_null();
         }
-        return value_null();
-    }
-    case NODE_FOR:
-    {
-        ForNode& for_node = n->get<ForNode>();
-        Env *scope = env_create(e); // Create scope for the loop variable (i)
-
-        // 1. Run Initializer (once)
-        exec_stmt(scope, for_node.init);
-
-        while (1)
+        case NODE_WHILE:
         {
-            // 2. Check Condition
-            Value c = eval_expr(scope, for_node.cond);
-            int truthy = is_truthy(c);
-            value_free(c);
-
-            if (!truthy)
-                break; // Exit loop
-
-            // 3. Execute Body
-            // We create a generic inner scope for the body to protect the iterator
-            Env *inner_scope = env_create(scope);
-            for (int i = 0; i < for_node.body.count; i++)
+            WhileNode& while_node = n->get<WhileNode>();
+            while (1)
             {
-                exec_stmt(inner_scope, for_node.body.items[i]);
-                if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
-                    break;
-            }
-            env_free(inner_scope);
-
-            if (return_exception.active)
-                break;
-            if (loop_exception.break_active)
-            {
-                loop_exception.break_active = 0;
-                break;
-            }
-            // (Continue is handled implicitly by going to the increment step)
-            if (loop_exception.continue_active)
-            {
-                loop_exception.continue_active = 0;
-            }
-
-            // 4. Run Increment
-            exec_stmt(scope, for_node.incr);
-        }
-
-        env_free(scope); // Cleanup loop variable 'i'
-        return value_null();
-    }
-    case NODE_SWITCH:
-    {
-        SwitchNode& switch_node = n->get<SwitchNode>();
-        Value val = eval_expr(e, switch_node.expr);
-        int matched = 0;
-
-        // Check all cases
-        for (int i = 0; i < switch_node.cases.count; i++)
-        {
-            AstNode *c = switch_node.cases.items[i];
-            Value cval = eval_expr(e, c->get<CaseNode>().value);
-            int eq = 0;
-
-            // Compare switch value with case value
-            if (val.type == cval.type)
-            {
-                if (val.type == VAL_INT)
-                    eq = (val.i == cval.i);
-                else if (val.type == VAL_FLOAT)
-                    eq = (val.f == cval.f);
-                else if (val.type == VAL_STRING)
-                    eq = !strcmp(val.s, cval.s);
-                else if (val.type == VAL_BOOL)
-                    eq = (val.b == cval.b);
-                else if (val.type == VAL_CHAR)
-                    eq = (val.c == cval.c);
-            }
-            else if (val.type == VAL_INT && cval.type == VAL_FLOAT)
-                eq = (val.i == cval.f);
-            else if (val.type == VAL_FLOAT && cval.type == VAL_INT)
-                eq = (val.f == cval.i);
-            value_free(cval);
-
-            if (eq)
-            {
-                matched = 1;
-                Env *scope = env_create(e);
-                for (int j = 0; j < c->get<CaseNode>().body.count; j++)
+                Value v = eval_expr(e, while_node.cond);
+                int t = is_truthy(v);
+                value_free(v);
+                if (!t)
                 {
-                    exec_stmt(scope, c->get<CaseNode>().body.items[j]);
-                    if (return_exception.active || loop_exception.continue_active)
+                    break;
+                }
+
+                Env *scope = env_create(e);
+                for (int i = 0; i < while_node.body.count; i++)
+                {
+                    exec_stmt(scope, while_node.body.items[i]);
+                    if (return_exception.active || loop_exception.break_active)
+                    {
                         break;
+                    }
+                    if (loop_exception.continue_active)
+                    {
+                        break;
+                    }
+                }
+                env_free(scope);
+
+                if (return_exception.active)
+                {
+                    break;
+                }
+                if (loop_exception.break_active)
+                {
+                    loop_exception.break_active = 0;
+                    break;
+                }
+                if (loop_exception.continue_active)
+                {
+                    loop_exception.continue_active = 0;
+                    continue;
+                }
+            }
+            return value_null();
+        }
+        case NODE_FOR:
+        {
+            ForNode& for_node = n->get<ForNode>();
+            Env *scope = env_create(e); // Create scope for the loop variable (i)
+
+            // 1. Run Initializer (once)
+            exec_stmt(scope, for_node.init);
+
+            while (1)
+            {
+                // 2. Check Condition
+                Value c = eval_expr(scope, for_node.cond);
+                int truthy = is_truthy(c);
+                value_free(c);
+
+                if (!truthy) break; // Exit loop
+
+                // 3. Execute Body
+                // We create a generic inner scope for the body to protect the iterator
+                Env *inner_scope = env_create(scope);
+                for (int i = 0; i < for_node.body.count; i++)
+                {
+                    exec_stmt
+                    (
+                        inner_scope, 
+                        for_node.body.items[i]
+                    );
+                    if 
+                    (
+                        return_exception.active     || 
+                        loop_exception.break_active || 
+                        loop_exception.continue_active
+                    ) break;
+
+                }
+                env_free(inner_scope);
+
+                if (return_exception.active)
+                {
+                    break;
+                }
+
+                if (loop_exception.break_active)
+                {
+                    loop_exception.break_active = 0;
+                    break;
+                }
+                // (Continue is handled implicitly by going to the increment step)
+                if (loop_exception.continue_active)
+                {
+                    loop_exception.continue_active = 0;
+                }
+
+                // 4. Run Increment
+                exec_stmt(scope, for_node.incr);
+            }
+
+            env_free(scope); // Cleanup loop variable 'i'
+            return value_null();
+        }
+        case NODE_SWITCH:
+        {
+            SwitchNode& switch_node = n->get<SwitchNode>();
+            Value val = eval_expr(e, switch_node.expr);
+            int matched = 0;
+
+            // Check all cases
+            for (int i = 0; i < switch_node.cases.count; i++)
+            {
+                AstNode *c = switch_node.cases.items[i];
+                Value cval = eval_expr(e, c->get<CaseNode>().value);
+                int eq = 0;
+
+                // Compare switch value with case value
+                if (val.type == cval.type)
+                {
+                    if (val.type == VAL_INT)
+                    {
+                        eq = (val.i == cval.i);
+                    }
+                    else if (val.type == VAL_FLOAT)
+                    {
+                        eq = (val.f == cval.f);
+                    }
+                    else if (val.type == VAL_STRING)
+                    {
+                        eq = !strcmp(val.s, cval.s);
+                    }
+                    else if (val.type == VAL_BOOL)
+                    {
+                        eq = (val.b == cval.b);
+                    }
+                    else if (val.type == VAL_CHAR)
+                    {
+                        eq = (val.c == cval.c);
+                    }
+                }
+                else if (val.type == VAL_INT && cval.type == VAL_FLOAT)
+                {
+                    eq = (val.i == cval.f);
+                }
+                else if (val.type == VAL_FLOAT && cval.type == VAL_INT)
+                {
+                    eq = (val.f == cval.i);
+                }   
+                value_free(cval);
+
+                if (eq)
+                {
+                    matched = 1;
+                    Env *scope = env_create(e);
+                    for (int j = 0; j < c->get<CaseNode>().body.count; j++)
+                    {
+                        exec_stmt(scope, c->get<CaseNode>().body.items[j]);
+                        if (return_exception.active || loop_exception.continue_active)
+                        {
+                            break;
+                        }
+
+                        if (loop_exception.break_active)
+                        {
+                            break;
+                        }
+                    }
+                    env_free(scope);
                     if (loop_exception.break_active)
+                    {
+                        loop_exception.break_active = 0;
+                    }
+                    break;
+                }
+            }
+
+            // Execute default block if no match found
+            if (!matched && switch_node.default_case.count > 0)
+            {
+                Env *scope = env_create(e);
+                for (int j = 0; j < switch_node.default_case.count; j++)
+                {
+                    exec_stmt(scope, switch_node.default_case.items[j]);
+                    if (return_exception.active || loop_exception.continue_active)
+                    {
                         break;
+                    }
+                    if (loop_exception.break_active)
+                    {
+                        break;
+                    }
                 }
                 env_free(scope);
                 if (loop_exception.break_active)
                 {
                     loop_exception.break_active = 0;
                 }
-                break;
             }
+            value_free(val);
+            return value_null();
         }
-
-        // Execute default block if no match found
-        if (!matched && switch_node.default_case.count > 0)
+        case NODE_BLOCK:
         {
+            BlockNode& block_node = n->get<BlockNode>();
             Env *scope = env_create(e);
-            for (int j = 0; j < switch_node.default_case.count; j++)
+            for (int i = 0; i < block_node.items.count; i++)
             {
-                exec_stmt(scope, switch_node.default_case.items[j]);
-                if (return_exception.active || loop_exception.continue_active)
+                exec_stmt(scope, block_node.items.items[i]);
+                if 
+                (
+                    return_exception.active     || 
+                    loop_exception.break_active || 
+                    loop_exception.continue_active
+                )
+                {
                     break;
-                if (loop_exception.break_active)
-                    break;
+                }
             }
             env_free(scope);
-            if (loop_exception.break_active)
-            {
-                loop_exception.break_active = 0;
-            }
+            return value_null();
         }
-        value_free(val);
-        return value_null();
-    }
-    case NODE_BLOCK:
-    {
-        BlockNode& block_node = n->get<BlockNode>();
-        Env *scope = env_create(e);
-        for (int i = 0; i < block_node.items.count; i++)
+        case NODE_GROUP:
         {
-            exec_stmt(scope, block_node.items.items[i]);
-            if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
+            BlockNode& block_node = n->get<BlockNode>();
+            // Execute statements in the CURRENT environment (e)
+            for (int i = 0; i < block_node.items.count; i++)
             {
-                break;
+                exec_stmt(e, block_node.items.items[i]);
+
+                // Still need to check for control flow (return/break)
+                if 
+                (
+                    return_exception.active     || 
+                    loop_exception.break_active || 
+                    loop_exception.continue_active
+                )
+                {
+                    break;
+                }
             }
+            return value_null();
         }
-        env_free(scope);
-        return value_null();
-    }
-    case NODE_GROUP:
-    {
-        BlockNode& block_node = n->get<BlockNode>();
-        // Execute statements in the CURRENT environment (e)
-        for (int i = 0; i < block_node.items.count; i++)
+
+        case NODE_FUNC_DEF:
         {
-            exec_stmt(e, block_node.items.items[i]);
-
-            // Still need to check for control flow (return/break)
-            if (return_exception.active || loop_exception.break_active || loop_exception.continue_active)
-            {
-                break;
-            }
+            FuncDefNode& funcdef = n->get<FuncDefNode>();
+            env_def_func(e, funcdef.name.c_str(), n);
+            return value_null();
         }
-        return value_null();
-    }
 
-    case NODE_FUNC_DEF:
-    {
-        FuncDefNode& funcdef = n->get<FuncDefNode>();
-        env_def_func(e, funcdef.name.c_str(), n);
-        return value_null();
-    }
+        case NODE_RETURN:
+        {
+            ReturnNode& ret_node = n->get<ReturnNode>();
 
-    case NODE_RETURN:
-    {
-        ReturnNode& ret_node = n->get<ReturnNode>();
-        // 1. Calculate the return value first
-        Value v = eval_expr(e, ret_node.expr);
-        // 2. Set the exception flag to stop further execution
-        return_exception.active = 1;
-        return_exception.value = v;
-        return value_null();
-    }
+            // 1. Calculate the return value first
+            Value v = eval_expr(e, ret_node.expr);
 
-    case NODE_BREAK:
-        loop_exception.break_active = 1;
-        return value_null();
+            // 2. Set the exception flag to stop further execution
+            return_exception.active = 1;
+            return_exception.value = v;
+            return value_null();
+        }
 
-    case NODE_CONTINUE:
-        loop_exception.continue_active = 1;
-        return value_null();
+        case NODE_BREAK:
+            loop_exception.break_active = 1;
+            return value_null();
 
-    default:
-    {
-        // Evaluate standalone expressions (e.g., function calls without assignment)
-        Value v = eval_expr(e, n);
-        value_free(v);
-        return value_null();
-    }
+        case NODE_CONTINUE:
+            loop_exception.continue_active = 1;
+            return value_null();
+
+        default:
+        {
+            // Evaluate standalone expressions (e.g., function calls without assignment)
+            Value v = eval_expr(e, n);
+            value_free(v);
+            return value_null();
+        }
     }
 }
 

@@ -101,11 +101,20 @@ static char *get_line_from_source(const char *source, int line_num)
     return line;
 }
 
-void error_report(ErrorType type, int line, int col, const char *message, const char *suggestion)
+void error_report
+(
+    ErrorType type, 
+    int line, 
+    int col, 
+    const char *message, 
+    const char *suggestion
+)
 {
     // Fallback to global tracker if line is unknown
     if (line <= 0)
+    {
         line = luna_current_line;
+    }
 
     fprintf(stderr, "%s%s%s", COLOR_RED, error_type_name(type), COLOR_RESET);
 
@@ -129,7 +138,14 @@ void error_report(ErrorType type, int line, int col, const char *message, const 
     }
 }
 
-void error_report_with_context(ErrorType type, int line, int col, const char *message, const char *suggestion)
+void error_report_with_context
+(
+    ErrorType type, 
+    int line, 
+    int col, 
+    const char *message, 
+    const char *suggestion
+)
 {
     // Fallback to global tracker if line is unknown
     if (line <= 0)
@@ -227,17 +243,13 @@ const char *suggest_for_unexpected_token(const char *found, const char *expected
     return buffer;
 }
 
-const char *suggest_for_undefined_var(const char *var_name)
+std::string suggest_for_undefined_var(std::string_view var_name)
 {
-    static char buffer[256];
-
-    // Check for common typos
-    if (strlen(var_name) > 0)
+    if (!var_name.empty())
     {
-        snprintf(buffer, sizeof(buffer),
-                 "Variable '%s' is not defined. Did you forget to declare it with 'let %s = ...'?",
-                 var_name, var_name);
-        return buffer;
+        return "Variable '" + std::string(var_name) +
+               "' is not defined. Did you forget to declare it with 'let " +
+               std::string(var_name) + " = ...'?";
     }
 
     return "Variable is not defined. Declare it with 'let' before using.";

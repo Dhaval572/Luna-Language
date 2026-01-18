@@ -44,11 +44,11 @@ Env *env_create(Env *parent)
     e->parent = parent;
     for (int i = 0; i < MAX_VARS; i++)
     {
-        e->vars[i].name = NULL;
+        e->vars[i].name = nullptr;
     }
     for (int i = 0; i < MAX_FUNCS; i++)
     {
-        e->funcs[i].name = NULL;
+        e->funcs[i].name = nullptr;
     }
     return e;
 }
@@ -74,7 +74,7 @@ void env_free(Env *e)
 
 Env *env_create_global(void)
 {
-    return env_create(NULL);
+    return env_create(nullptr);
 }
 
 void env_free_global(Env *env)
@@ -97,7 +97,7 @@ Value *env_get(Env *e, const char *name)
         }
         e = e->parent;
     }
-    return NULL;
+    return nullptr;
 }
 
 // Defines a new variable in the current scope
@@ -164,5 +164,5 @@ AstNode *env_get_func(Env *e, const char *name)
         }
         e = e->parent;
     }
-    return NULL;
+    return nullptr;
 }
